@@ -41,8 +41,7 @@ public class NotableMissesSelectMenuHandler : InteractionModuleBase<SocketIntera
             await _discordRepo.SetLeagueGameNewsSetting(leagueGameNewsChannel.LeagueYear.League.LeagueID,
                 leagueGameNewsChannel.GuildID,
                 leagueGameNewsChannel.ChannelID,
-                leagueGameNewsChannel.SendLeagueMasterGameUpdates,
-                valueToSet);
+                leagueGameNewsChannel.SendLeagueMasterGameUpdates, TODO);
             await DeleteOriginalResponseAsync();
             await FollowupAsync($"Notable Misses has been set to **{(valueToSet ? "ON" : "OFF")}**");
         }

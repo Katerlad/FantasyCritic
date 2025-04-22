@@ -1,4 +1,5 @@
 using FantasyCritic.Lib.DependencyInjection;
+using FantasyCritic.Lib.Discord.Enums;
 using FantasyCritic.Lib.Discord.Models;
 using FantasyCritic.Lib.Domain.Conferences;
 using FantasyCritic.Lib.Interfaces;
@@ -29,12 +30,15 @@ public class MySQLDiscordRepo : IDiscordRepo
     public async Task SetLeagueChannel(Guid leagueID, ulong guildID, ulong channelID)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, true, true, null);
+        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, true, new NotableMissesSetting(), null);
         var existingChannel = await GetLeagueChannelEntity(guildID, channelID);
         var sql = existingChannel == null
             ? "INSERT INTO tbl_discord_leaguechannel (GuildID,ChannelID,LeagueID,SendLeagueMasterGameUpdates,SendNotableMisses) VALUES (@GuildID, @ChannelID, @LeagueID, @SendLeagueMasterGameUpdates, @SendNotableMisses)"
             : "UPDATE tbl_discord_leaguechannel SET LeagueID=@LeagueID WHERE ChannelID=@ChannelID AND GuildID=@GuildID";
-        await connection.ExecuteAsync(sql, leagueChannelEntity);
+        var entity = existingChannel == null
+            ? leagueChannelEntity
+            : existingChannel;
+        await connection.ExecuteAsync(sql, entity);
     }
 
     public async Task SetConferenceChannel(Guid conferenceID, ulong guildID, ulong channelID)
@@ -48,10 +52,10 @@ public class MySQLDiscordRepo : IDiscordRepo
         await connection.ExecuteAsync(sql, conferenceChannelEntity);
     }
 
-    public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, bool sendLeagueMasterGameUpdates, bool sendNotableMisses)
+    public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, bool sendLeagueMasterGameUpdates, NotableMissesSetting notableMissesSetting)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, sendLeagueMasterGameUpdates, sendNotableMisses, null);
+        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, sendLeagueMasterGameUpdates, notableMissesSetting, null);
         var sql = "UPDATE tbl_discord_leaguechannel SET SendLeagueMasterGameUpdates=@SendLeagueMasterGameUpdates, SendNotableMisses=@SendNotableMisses WHERE LeagueID=@LeagueID AND GuildID=@GuildID AND ChannelID=@ChannelID";
         await connection.ExecuteAsync(sql, leagueChannelEntity);
     }
@@ -115,7 +119,7 @@ public class MySQLDiscordRepo : IDiscordRepo
     public async Task SetBidAlertRoleId(Guid leagueID, ulong guildID, ulong channelID, ulong? bidAlertRoleID)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, true, true, bidAlertRoleID);
+        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, true, new NotableMissesSetting(), bidAlertRoleID);
         var sql = "UPDATE tbl_discord_leaguechannel SET BidAlertRoleID=@BidAlertRoleID WHERE LeagueID=@LeagueID AND GuildID=@GuildID AND ChannelID=@ChannelID";
         await connection.ExecuteAsync(sql, leagueChannelEntity);
     }

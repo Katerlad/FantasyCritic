@@ -21,6 +21,6 @@ internal class GameNewsChannelEntity
 
     public GameNewsChannel ToDomain(IEnumerable<MasterGameTag> skippedTags)
     {
-        return new GameNewsChannel(GuildID, ChannelID, Lib.Discord.Models.GameNewsSetting.FromValue(GameNewsSetting), skippedTags.ToList());
+        return new GameNewsChannel(GuildID, ChannelID, skippedTags.ToList(), TODO);
     }
 }

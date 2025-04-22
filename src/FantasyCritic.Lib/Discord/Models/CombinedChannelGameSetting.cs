@@ -1,3 +1,4 @@
+using FantasyCritic.Lib.Discord.Enums;
 using Serilog;
 
 namespace FantasyCritic.Lib.Discord.Models;
@@ -7,25 +8,23 @@ public class CombinedChannelGameSetting
 
     private readonly bool _sendLeagueMasterGameUpdates;
     private readonly bool _sendNotableMisses;
-    private readonly GameNewsSetting _gameNewsSetting;
+    private readonly AdvancedGameNewsSettings _advancedGameNewsSettings;
     private readonly IReadOnlyList<MasterGameTag> _skippedTags;
 
-    public CombinedChannelGameSetting(bool sendLeagueMasterGameUpdates, bool sendNotableMisses, GameNewsSetting gameNewsSetting, IReadOnlyList<MasterGameTag> skippedTags)
+    private const Decimal NOTABLE_MISS_THRESHOLD = 83m;
+
+    public CombinedChannelGameSetting(AdvancedGameNewsSettings advancedGameNewsSettings, IReadOnlyList<MasterGameTag> skippedTags)
     {
-        _sendLeagueMasterGameUpdates = sendLeagueMasterGameUpdates;
-        _sendNotableMisses = sendNotableMisses;
-        _gameNewsSetting = gameNewsSetting;
+        _advancedGameNewsSettings = advancedGameNewsSettings;
         _skippedTags = skippedTags;
     }
 
+    
+
     public bool NewGameIsRelevant(MasterGame masterGame, IReadOnlyList<LeagueYear>? activeLeagueYears, DiscordChannelKey channelKey, LocalDate currentDate)
     {
-        if (_gameNewsSetting.Equals(GameNewsSetting.Off))
-        {
-            //This is by definition not a game in your league (it was just added), so if you don't want general game news, then you don't want this.
-            return false;
-        }
-        if (_gameNewsSetting.Equals(GameNewsSetting.All))
+
+        if (_advancedGameNewsSettings.AllGameUpdatedEnabled == true)
         {
             return true;
         }
@@ -45,36 +44,41 @@ public class CombinedChannelGameSetting
                     continue;
                 }
 
-                if (_gameNewsSetting.Equals(GameNewsSetting.WillReleaseInYear))
+                if (_advancedGameNewsSettings.WillReleaseInYearEnabled == true)
                 {
                     return masterGame.WillReleaseInYear(leagueYear.Year);
                 }
-                if (_gameNewsSetting.Equals(GameNewsSetting.MightReleaseInYear))
+                if (_advancedGameNewsSettings.MightReleaseInYearEnabled == true)
                 {
-                    return masterGame.WillOrMightReleaseInYear(leagueYear.Year);
+                    return masterGame.MightReleaseInYear(leagueYear.Year);
                 }
             }
-
+            // If we are here, it means the game is not eligible in any league year
             return false;
         }
 
-        if (_gameNewsSetting.Equals(GameNewsSetting.WillReleaseInYear))
+        if (_advancedGameNewsSettings.WillReleaseInYearEnabled == true)
         {
             return masterGame.WillReleaseInYear(currentDate.Year);
         }
-        if (_gameNewsSetting.Equals(GameNewsSetting.MightReleaseInYear))
+
+        if (_advancedGameNewsSettings.MightReleaseInYearEnabled == true)
         {
-            return masterGame.WillOrMightReleaseInYear(currentDate.Year);
+            return masterGame.MightReleaseInYear(currentDate.Year);
         }
 
         Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, channelKey);
-        return false;
+        return false; // Default return value
+
+
+        
     }
 
-    public bool ExistingGameIsRelevant(MasterGame masterGame, bool releaseStatusChanged, IReadOnlyList<LeagueYear>? activeLeagueYears,
+
+    public bool EditedGameIsRelevant(MasterGame masterGame, bool releaseStatusChanged, IReadOnlyList<LeagueYear>? activeLeagueYears,
         DiscordChannelKey channelKey, LocalDate currentDate)
     {
-        if (_gameNewsSetting.Equals(GameNewsSetting.All))
+        if (_advancedGameNewsSettings.AllGameUpdatedEnabled == true)
         {
             return true;
         }
@@ -84,12 +88,12 @@ public class CombinedChannelGameSetting
             foreach (var leagueYear in activeLeagueYears)
             {
                 bool inLeagueYear = leagueYear.Publishers.Any(x => x.MyMasterGames.Contains(masterGame));
-                if (_sendLeagueMasterGameUpdates && inLeagueYear)
+                if (_advancedGameNewsSettings.LeagueGameNewsEnabled == true  && inLeagueYear)
                 {
                     return true;
                 }
 
-                if (_gameNewsSetting.Equals(GameNewsSetting.Off))
+                if (_advancedGameNewsSettings.AllGameUpdatedEnabled == false)
                 {
                     continue;
                 }
@@ -105,10 +109,15 @@ public class CombinedChannelGameSetting
                     continue;
                 }
 
-                bool willReleaseRelevance = _gameNewsSetting.Equals(GameNewsSetting.WillReleaseInYear) && masterGame.WillReleaseInYear(leagueYear.Year);
-                bool mightReleaseRelevance = _gameNewsSetting.Equals(GameNewsSetting.MightReleaseInYear) && masterGame.WillOrMightReleaseInYear(leagueYear.Year);
+                bool willReleaseRelevance = _advancedGameNewsSettings.WillReleaseInYearEnabled == true && masterGame.WillReleaseInYear(leagueYear.Year);
+                bool mightReleaseRelevance = _advancedGameNewsSettings.MightReleaseInYearEnabled == true && masterGame.MightReleaseInYear(leagueYear.Year);
                 bool releaseRelevance = releaseStatusChanged || willReleaseRelevance || mightReleaseRelevance;
                 if (releaseRelevance)
+                {
+                    return true;
+                }
+
+                if (_advancedGameNewsSettings.UnannouncedGameNewsEnabled == true )
                 {
                     return true;
                 }
@@ -117,7 +126,8 @@ public class CombinedChannelGameSetting
             return false;
         }
 
-        if (_gameNewsSetting.Equals(GameNewsSetting.Off))
+        
+        if (_advancedGameNewsSettings.AllGameUpdatedEnabled == false)
         {
             return false;
         }
@@ -125,14 +135,19 @@ public class CombinedChannelGameSetting
         {
             return false;
         }
-        if (_gameNewsSetting.Equals(GameNewsSetting.WillReleaseInYear))
+        if (_advancedGameNewsSettings.WillReleaseInYearEnabled == true)
         {
             return masterGame.WillReleaseInYear(currentDate.Year);
         }
-        if (_gameNewsSetting.Equals(GameNewsSetting.MightReleaseInYear))
+        if (_advancedGameNewsSettings.MightReleaseInYearEnabled == true)
         {
-            return masterGame.WillOrMightReleaseInYear(currentDate.Year);
+            return masterGame.MightReleaseInYear(currentDate.Year);
         }
+        if (_advancedGameNewsSettings.NotableMissSetting == NotableMissesSetting.None && masterGame.HasAnyReviews)
+        {
+            return false;
+        }
+
 
         Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, channelKey);
         return false;
@@ -140,7 +155,7 @@ public class CombinedChannelGameSetting
 
     public bool ReleasedGameIsRelevant(MasterGame masterGame, IReadOnlyList<LeagueYear>? activeLeagueYears)
     {
-        if (_gameNewsSetting.Equals(GameNewsSetting.All))
+        if (_advancedGameNewsSettings.AllGameUpdatedEnabled == true)
         {
             return true;
         }
@@ -163,16 +178,23 @@ public class CombinedChannelGameSetting
         {
             return false;
         }
+        if (_advancedGameNewsSettings.NotableMissSetting == NotableMissesSetting.None && masterGame.HasAnyReviews)
+        {
+            return false;
+        }
 
-        return !_gameNewsSetting.Equals(GameNewsSetting.Off);
+        //If all game updates are disabled, we don't want to send any game updates
+        return !_advancedGameNewsSettings.AllGameUpdatedEnabled == false;
     }
 
-    public bool ScoredGameIsRelevant(MasterGame masterGame, IReadOnlyList<LeagueYear>? activeLeagueYears, decimal? criticScore, LocalDate currentDate)
+    public bool ScoredGameIsRelevant(MasterGame masterGame, IReadOnlyList<LeagueYear>? activeLeagueYears, decimal? criticScore,decimal? oldScore, LocalDate currentDate)
     {
-        if (_gameNewsSetting.Equals(GameNewsSetting.All))
+        if (_advancedGameNewsSettings.AllGameUpdatedEnabled)
         {
             return true;
         }
+
+        bool isNotableMiss = criticScore is >= NOTABLE_MISS_THRESHOLD && masterGame.HasAnyReviews;
 
         if (_sendLeagueMasterGameUpdates && activeLeagueYears is not null)
         {
@@ -184,7 +206,8 @@ public class CombinedChannelGameSetting
                     return true;
                 }
 
-                if (_sendNotableMisses && criticScore is >= 83m && leagueYear.GameIsEligibleInAnySlot(masterGame, currentDate))
+                
+                if (_sendNotableMisses && criticScore is >= NOTABLE_MISS_THRESHOLD && leagueYear.GameIsEligibleInAnySlot(masterGame, currentDate))
                 {
                     return true;
                 }
@@ -193,18 +216,42 @@ public class CombinedChannelGameSetting
             return false;
         }
 
+        
+        if (_advancedGameNewsSettings.NotableMissSetting == NotableMissesSetting.None)
+        {
+            return false;
+        }
+        //If there is a previous score, and the user only wants initial score updates, we don't want to send any game updates
+        if (_advancedGameNewsSettings.NotableMissSetting == NotableMissesSetting.InitialScore && oldScore is not null)
+        {
+            return false;
+        }
+        //If the user wants all notable miss updates, we want to send all score updates above the threshold
+        if (_advancedGameNewsSettings.NotableMissSetting == NotableMissesSetting.All && criticScore >= NOTABLE_MISS_THRESHOLD)
+        {
+            return true;
+        }
+
         if (masterGame.Tags.Intersect(_skippedTags).Any())
         {
             return false;
         }
 
-        return !_gameNewsSetting.Equals(GameNewsSetting.Off);
+        return !_advancedGameNewsSettings.AllGameUpdatedEnabled == false;
     }
 
     public override string ToString()
     {
         List<string> parts = new List<string>();
-        if (_sendLeagueMasterGameUpdates)
+        if (_advancedGameNewsSettings.AllGameUpdatedEnabled)
+        {
+            parts.Add("All Master Game Updates");
+        }
+        else
+        {
+            parts.Add("No Game Updates");
+        }
+        if (_advancedGameNewsSettings.LeagueGameNewsEnabled)
         {
             parts.Add("League Master Game Updates");
         }
@@ -213,21 +260,30 @@ public class CombinedChannelGameSetting
             parts.Add("No League Master Game Updates");
         }
 
-        if (_gameNewsSetting.Equals(GameNewsSetting.Off))
+        if (_advancedGameNewsSettings.AllNonLeagueGameUpdatesEnabled)
+        {
+            parts.Add("All Non-League Master Game Updates");
+            
+        }
+        else
         {
             parts.Add("No Non-League Master Game Updates");
         }
-        else if (_gameNewsSetting.Equals(GameNewsSetting.All))
-        {
-            parts.Add("All Master Game Updates");
-        }
-        else if (_gameNewsSetting.Equals(GameNewsSetting.MightReleaseInYear))
+        if (_advancedGameNewsSettings.MightReleaseInYearEnabled)
         {
             parts.Add("Any 'Might Release' Master Game Updates");
         }
-        else if (_gameNewsSetting.Equals(GameNewsSetting.WillReleaseInYear))
+        else
+        {
+            parts.Add("No 'Might Release' Master Game Updates");
+        }
+        if (_advancedGameNewsSettings.WillReleaseInYearEnabled)
         {
             parts.Add("Any 'Will Release' Master Game Updates");
+        }
+        else
+        {
+            parts.Add("No 'Will Release' Master Game Updates");
         }
 
         return string.Join(',', parts);
