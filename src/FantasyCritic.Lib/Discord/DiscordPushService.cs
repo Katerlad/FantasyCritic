@@ -425,7 +425,7 @@ public class DiscordPushService
         await SendLeagueYearScoreUpdateMessage(scoreChanges, leagueChannels);
     }
 
-    public async Task SendLeagueYearScoreUpdateMessage(LeagueYearScoreChanges scoreChanges, IEnumerable<MinimalLeagueChannel> leagueChannels)
+    public async Task SendLeagueYearScoreUpdateMessage(LeagueYearScoreChanges scoreChanges, IEnumerable<MinimalLeagueChannelRecord> leagueChannels)
     {
         bool shouldRun = await StartBot();
         if (!shouldRun)
@@ -682,7 +682,7 @@ public class DiscordPushService
         await DiscordRateLimitUtilities.RateLimitMessages(bidMessages);
     }
 
-    private IReadOnlyList<PreparedDiscordMessage> GetAllBidMessages(LeagueActionProcessingSet leagueAction, IEnumerable<MinimalLeagueChannel> leagueChannels)
+    private IReadOnlyList<PreparedDiscordMessage> GetAllBidMessages(LeagueActionProcessingSet leagueAction, IEnumerable<MinimalLeagueChannelRecord> leagueChannels)
     {
         var bidMessages = new List<string>();
         var leagueActionDictionaryByGame = new Dictionary<string, List<PickupBid>>();
@@ -723,7 +723,7 @@ public class DiscordPushService
         return GetAllMessagesForAllLeagueChannels(leagueChannels, messageListToSend, true);
     }
 
-    private IReadOnlyList<PreparedDiscordMessage> GetAllDropMessages(LeagueActionProcessingSet leagueAction, IEnumerable<MinimalLeagueChannel> leagueChannels)
+    private IReadOnlyList<PreparedDiscordMessage> GetAllDropMessages(LeagueActionProcessingSet leagueAction, IEnumerable<MinimalLeagueChannelRecord> leagueChannels)
     {
         if (!leagueAction.Drops.Any())
         {
@@ -738,7 +738,7 @@ public class DiscordPushService
         return GetAllMessagesForAllLeagueChannels(leagueChannels, dropMessageListToSend);
     }
 
-    private IReadOnlyList<PreparedDiscordMessage> GetAllMessagesForAllLeagueChannels(IEnumerable<MinimalLeagueChannel> leagueChannels, IReadOnlyList<string> messageListToSend, bool mentionRole = false)
+    private IReadOnlyList<PreparedDiscordMessage> GetAllMessagesForAllLeagueChannels(IEnumerable<MinimalLeagueChannelRecord> leagueChannels, IReadOnlyList<string> messageListToSend, bool mentionRole = false)
     {
         var preparedMessages = new List<PreparedDiscordMessage>();
         foreach (var leagueChannel in leagueChannels)

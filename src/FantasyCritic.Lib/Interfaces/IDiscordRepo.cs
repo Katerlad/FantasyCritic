@@ -12,13 +12,13 @@ public interface IDiscordRepo
     Task SetBidAlertRoleId(Guid leagueID, ulong guildID, ulong channelID, ulong? bidAlertRoleID);
     Task<bool> DeleteLeagueChannel(ulong guildID, ulong channelID);
     Task<bool> DeleteConferenceChannel(ulong guildID, ulong channelID);
-    Task<IReadOnlyList<MinimalLeagueChannel>> GetAllLeagueChannels();
-    Task<IReadOnlyList<GameNewsChannel>> GetAllGameNewsChannels();
-    Task<IReadOnlyList<MinimalLeagueChannel>> GetLeagueChannels(Guid leagueID);
+    Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetAllLeagueChannels();
+    Task<IReadOnlyList<GameNewsOnlyChannelRecord>> GetAllGameNewsChannels();
+    Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetLeagueChannels(Guid leagueID);
     Task<IReadOnlyList<MinimalConferenceChannel>> GetConferenceChannels(Guid conferenceID);
-    Task<MinimalLeagueChannel?> GetMinimalLeagueChannel(ulong guildID, ulong channelID);
-    Task<LeagueChannel?> GetLeagueChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null);
+    Task<MinimalLeagueChannelRecord?> GetMinimalLeagueChannel(ulong guildID, ulong channelID);
+    Task<LeagueChannelRecord?> GetLeagueChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null);
     Task<ConferenceChannel?> GetConferenceChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null);
-    Task<GameNewsChannel?> GetGameNewsChannel(ulong guildID, ulong channelID);
+    Task<GameNewsOnlyChannelRecord?> GetGameNewsChannel(ulong guildID, ulong channelID);
     Task RemoveAllLeagueChannelsForLeague(Guid leagueID);
 }

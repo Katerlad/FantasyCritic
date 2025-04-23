@@ -19,7 +19,7 @@ internal class GameNewsChannelEntity
     public ulong ChannelID { get; set; }
     public string GameNewsSetting { get; set; } = null!;
 
-    public GameNewsChannel ToDomain(IEnumerable<MasterGameTag> skippedTags)
+    public GameNewsOnlyChannelRecord ToDomain(IEnumerable<MasterGameTag> skippedTags)
     {
         return new GameNewsChannel(GuildID, ChannelID, skippedTags.ToList(), TODO);
     }

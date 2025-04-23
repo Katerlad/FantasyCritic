@@ -214,7 +214,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
     }
 
     private async Task<PublisherSearchResults> FindPublishers(string publisherOrPlayerName, SocketUser user,
-        LeagueChannel leagueChannel, ulong channelId)
+        LeagueChannelRecord leagueChannel, ulong channelId)
     {
         var searchResults = new PublisherSearchResults();
 
@@ -243,7 +243,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
         return searchResults;
     }
 
-    private static List<EmbedFieldBuilder> BuildPublisherEmbedFieldBuilders(Publisher publisherFound, LeagueChannel leagueChannel)
+    private static List<EmbedFieldBuilder> BuildPublisherEmbedFieldBuilders(Publisher publisherFound, LeagueChannelRecord leagueChannel)
     {
         var pickedGames = GetSortedPublisherGames(publisherFound, false);
         var counterPickedGames = GetSortedPublisherGames(publisherFound, true);
@@ -344,7 +344,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
     private static List<EmbedFieldBuilder> BuildEmbedFieldBuilders(string gamesMessage,
         string counterPickMessage,
         Publisher publisherFound,
-        LeagueChannel leagueChannel,
+        LeagueChannelRecord leagueChannel,
         string remainingWillReleaseDrops,
         int leagueOptionWillReleaseDroppableGames,
         string remainingWillNotReleaseDrops,
@@ -437,7 +437,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
         return gameMessage;
     }
 
-    private async Task<Publisher?> GetPublisherForDiscordUser(ulong discordUserId, LeagueChannel leagueChannel,
+    private async Task<Publisher?> GetPublisherForDiscordUser(ulong discordUserId, LeagueChannelRecord leagueChannel,
         ulong channelId)
     {
         Publisher? publisherFound = null;

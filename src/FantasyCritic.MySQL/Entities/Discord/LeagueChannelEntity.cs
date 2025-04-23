@@ -25,13 +25,13 @@ internal class LeagueChannelEntity
     public NotableMissesSetting NotableMissesSetting { get; set; }
     public ulong? BidAlertRoleID { get; set; }
 
-    public LeagueChannel ToDomain(LeagueYear leagueYear)
+    public LeagueChannelRecord ToDomain(LeagueYear leagueYear)
     {
-        return new LeagueChannel(leagueYear, GuildID, ChannelID, SendLeagueMasterGameUpdates, NotableMissesSetting, BidAlertRoleID);
+        return new LeagueChannelRecord(leagueYear, GuildID, ChannelID, SendLeagueMasterGameUpdates, NotableMissesSetting, gameNewsSettings, BidAlertRoleID);
     }
 
-    public MinimalLeagueChannel ToMinimalDomain()
+    public MinimalLeagueChannelRecord ToMinimalDomain()
     {
-        return new MinimalLeagueChannel(LeagueID, GuildID, ChannelID, SendLeagueMasterGameUpdates, NotableMissesSetting, BidAlertRoleID);
+        return new MinimalLeagueChannelRecord(LeagueID, GuildID, ChannelID, SendLeagueMasterGameUpdates, NotableMissesSetting, BidAlertRoleID);
     }
 }

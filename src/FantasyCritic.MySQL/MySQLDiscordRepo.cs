@@ -150,7 +150,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         return rowsDeleted >= 1;
     }
 
-    public async Task<IReadOnlyList<MinimalLeagueChannel>> GetAllLeagueChannels()
+    public async Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetAllLeagueChannels()
     {
         await using var connection = new MySqlConnection(_connectionString);
         const string sql = "select * from tbl_discord_leaguechannel";
@@ -159,7 +159,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         return leagueChannels.Select(l => l.ToMinimalDomain()).ToList();
     }
 
-    public async Task<IReadOnlyList<GameNewsChannel>> GetAllGameNewsChannels()
+    public async Task<IReadOnlyList<GameNewsOnlyChannelRecord>> GetAllGameNewsChannels()
     {
         var possibleTags = await _masterGameRepo.GetMasterGameTags();
 
@@ -171,7 +171,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         var tagEntities = await connection.QueryAsync<GameNewsChannelSkippedTagEntity>(tagSQL);
 
         var tagLookup = tagEntities.ToLookup(x => new DiscordChannelKey(x.GuildID, x.ChannelID));
-        List<GameNewsChannel> gameNewsChannels = new List<GameNewsChannel>();
+        List<GameNewsOnlyChannelRecord> gameNewsChannels = new List<GameNewsOnlyChannelRecord>();
         foreach (var channelEntity in channelEntities)
         {
             var tagAssociations = tagLookup[new DiscordChannelKey(channelEntity.GuildID, channelEntity.ChannelID)].Select(x => x.TagName).ToList();
@@ -184,7 +184,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         return gameNewsChannels;
     }
 
-    public async Task<IReadOnlyList<MinimalLeagueChannel>> GetLeagueChannels(Guid leagueID)
+    public async Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetLeagueChannels(Guid leagueID)
     {
         await using var connection = new MySqlConnection(_connectionString);
         var queryObject = new
@@ -212,7 +212,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         return conferenceChannels.Select(l => l.ToMinimalDomain()).ToList();
     }
 
-    public async Task<LeagueChannel?> GetLeagueChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null)
+    public async Task<LeagueChannelRecord?> GetLeagueChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null)
     {
         var leagueChannelEntity = await GetLeagueChannelEntity(guildID, channelID);
         if (leagueChannelEntity is null)
@@ -286,7 +286,7 @@ public class MySQLDiscordRepo : IDiscordRepo
             : conferenceChannelEntity.ToDomain(conferenceYear);
     }
 
-    public async Task<GameNewsChannel?> GetGameNewsChannel(ulong guildID, ulong channelID)
+    public async Task<GameNewsOnlyChannelRecord?> GetGameNewsChannel(ulong guildID, ulong channelID)
     {
         var possibleTags = await _masterGameRepo.GetMasterGameTags();
 
@@ -310,7 +310,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         return entity?.ToDomain(tags);
     }
 
-    public async Task<MinimalLeagueChannel?> GetMinimalLeagueChannel(ulong guildID, ulong channelID)
+    public async Task<MinimalLeagueChannelRecord?> GetMinimalLeagueChannel(ulong guildID, ulong channelID)
     {
         var leagueChannelEntity = await GetLeagueChannelEntity(guildID, channelID);
         return leagueChannelEntity?.ToMinimalDomain();

@@ -4,7 +4,7 @@ using FantasyCritic.Lib.Discord.Models;
 
 namespace FantasyCritic.Lib.Domain;
 
-public record MinimalLeagueChannel(Guid LeagueID, ulong GuildID, ulong ChannelID, bool SendLeagueMasterGameUpdates, NotableMissesSetting NotableMissesSetting, ulong? BidAlertRoleID) : IDiscordChannel
+public record MinimalLeagueChannelRecord(Guid LeagueID, ulong GuildID, ulong ChannelID, bool SendLeagueMasterGameUpdates, NotableMissesSetting NotableMissesSetting, ulong? BidAlertRoleID) : IDiscordChannel
 {
     public DiscordChannelKey ChannelKey => new DiscordChannelKey(GuildID, ChannelID);
 
@@ -12,18 +12,20 @@ public record MinimalLeagueChannel(Guid LeagueID, ulong GuildID, ulong ChannelID
         => new MultiYearLeagueChannel(LeagueID, activeLeagueYears, GuildID, ChannelID, SendLeagueMasterGameUpdates, NotableMissesSetting, BidAlertRoleID);
 }
 
-public record LeagueChannel(LeagueYear LeagueYear, ulong GuildID, ulong ChannelID, bool SendLeagueMasterGameUpdates, NotableMissesSetting NotableMissesSetting, ulong? BidAlertRoleID);
+public record LeagueChannelRecord(LeagueYear LeagueYear, ulong GuildID, ulong ChannelID, bool SendLeagueMasterGameUpdates, NotableMissesSetting NotableMissesSetting, AdvancedGameNewsSettings gameNewsSettings, ulong? BidAlertRoleID);
 
 public record MultiYearLeagueChannel(Guid LeagueID, IReadOnlyList<LeagueYear> ActiveLeagueYears, ulong GuildID, ulong ChannelID, bool SendLeagueMasterGameUpdates, NotableMissesSetting NotableMissesSetting, ulong? BidAlertRoleID);
 
-public record GameNewsChannel(ulong GuildID, ulong ChannelID, IReadOnlyList<MasterGameTag> SkippedTags, AdvancedGameNewsSettings AdvancedGameNewsSettings)
+public record GameNewsOnlyChannelRecord(ulong GuildID, ulong ChannelID, IReadOnlyList<MasterGameTag> SkippedTags, AdvancedGameNewsSettings AdvancedGameNewsSettings)
 {
     public DiscordChannelKey ChannelKey => new DiscordChannelKey(GuildID, ChannelID);
 }
 
+
+
 public class CombinedChannel
 {
-    public CombinedChannel(MultiYearLeagueChannel? leagueChannel, GameNewsChannel? gameNewsChannel)
+    public CombinedChannel(MultiYearLeagueChannel? leagueChannel, GameNewsOnlyChannelRecord? gameNewsChannel)
     {
         if (leagueChannel is null && gameNewsChannel is null)
         {
