@@ -62,7 +62,7 @@ public class LeagueCommand : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var leagueYear = leagueChannel.LeagueYear;
+        var leagueYear = leagueChannel.CurrentLeagueYear;
 
         var previousYearWinner = await _fantasyCriticRepo.GetLeagueYearWinner(leagueYear.League.LeagueID, leagueYear.Year - 1);
         var publisherLines = DiscordSharedMessageUtilities.RankLeaguePublishers(leagueYear, previousYearWinner, systemWideValues, dateToCheck);

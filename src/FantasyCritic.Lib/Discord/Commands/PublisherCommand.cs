@@ -129,7 +129,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
         var publisherUrlBuilder = new PublisherUrlBuilder(_baseAddress, publisherFound.PublisherID);
 
         await FollowupAsync(embed: _discordFormatter.BuildRegularEmbedWithUserFooter(
-            $"{publisherFound.GetPublisherAndUserDisplayName()} ({leagueChannel.LeagueYear.Year})",
+            $"{publisherFound.GetPublisherAndUserDisplayName()} ({leagueChannel.CurrentLeagueYear.Year})",
             publisherUrlBuilder.BuildUrl("View Publisher"),
             Context.User,
             embedFieldBuilders));
@@ -168,7 +168,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
         var publisherUrlBuilder = new PublisherUrlBuilder(_baseAddress, publisherSearchResults.PublisherFoundForDiscordUser.PublisherID);
 
         await FollowupAsync(embed: _discordFormatter.BuildRegularEmbedWithUserFooter(
-            $"{publisherSearchResults.PublisherFoundForDiscordUser.GetPublisherAndUserDisplayName()} ({leagueChannel.LeagueYear.Year})",
+            $"{publisherSearchResults.PublisherFoundForDiscordUser.GetPublisherAndUserDisplayName()} ({leagueChannel.CurrentLeagueYear.Year})",
             publisherUrlBuilder.BuildUrl("View Publisher"),
             Context.User,
             embedFieldBuilders));
@@ -207,7 +207,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
         var publisherUrlBuilder = new PublisherUrlBuilder(_baseAddress, publisherSearchResults.PublisherFoundForDiscordUser.PublisherID);
 
         await FollowupAsync(embed: _discordFormatter.BuildRegularEmbedWithUserFooter(
-            $"{publisherSearchResults.PublisherFoundForDiscordUser.GetPublisherAndUserDisplayName()} ({leagueChannel.LeagueYear.Year})",
+            $"{publisherSearchResults.PublisherFoundForDiscordUser.GetPublisherAndUserDisplayName()} ({leagueChannel.CurrentLeagueYear.Year})",
             publisherUrlBuilder.BuildUrl("View Publisher"),
             Context.User,
             embedFieldBuilders));
@@ -230,11 +230,11 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
         {
             var termToSearch = publisherOrPlayerName.ToLower().Trim();
 
-            searchResults.FoundByPlayerName = leagueChannel.LeagueYear.Publishers.Where(p => p.User.UserName
+            searchResults.FoundByPlayerName = leagueChannel.CurrentLeagueYear.Publishers.Where(p => p.User.UserName
                     .ToLower()
                     .Contains(termToSearch))
                 .ToList();
-            searchResults.FoundByPublisherName = leagueChannel.LeagueYear.Publishers.Where(p => p.PublisherName
+            searchResults.FoundByPublisherName = leagueChannel.CurrentLeagueYear.Publishers.Where(p => p.PublisherName
                     .ToLower()
                     .Contains(termToSearch))
                 .ToList();
@@ -249,11 +249,11 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
         var counterPickedGames = GetSortedPublisherGames(publisherFound, true);
 
         var remainingWillReleaseDrops =
-            GetDropsRemainingText(leagueChannel.LeagueYear.Options.WillReleaseDroppableGames,
+            GetDropsRemainingText(leagueChannel.CurrentLeagueYear.Options.WillReleaseDroppableGames,
                 publisherFound.WillReleaseGamesDropped);
         var remainingWillNotReleaseDrops = GetDropsRemainingText(
-            leagueChannel.LeagueYear.Options.WillNotReleaseDroppableGames, publisherFound.WillNotReleaseGamesDropped);
-        var remainingFreeDroppableGames = GetDropsRemainingText(leagueChannel.LeagueYear.Options.FreeDroppableGames,
+            leagueChannel.CurrentLeagueYear.Options.WillNotReleaseDroppableGames, publisherFound.WillNotReleaseGamesDropped);
+        var remainingFreeDroppableGames = GetDropsRemainingText(leagueChannel.CurrentLeagueYear.Options.FreeDroppableGames,
             publisherFound.FreeGamesDropped);
 
 
@@ -266,11 +266,11 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
             publisherFound,
             leagueChannel,
             remainingWillReleaseDrops,
-            leagueChannel.LeagueYear.Options.WillReleaseDroppableGames,
+            leagueChannel.CurrentLeagueYear.Options.WillReleaseDroppableGames,
             remainingWillNotReleaseDrops,
-            leagueChannel.LeagueYear.Options.WillNotReleaseDroppableGames,
+            leagueChannel.CurrentLeagueYear.Options.WillNotReleaseDroppableGames,
             remainingFreeDroppableGames,
-            leagueChannel.LeagueYear.Options.FreeDroppableGames);
+            leagueChannel.CurrentLeagueYear.Options.FreeDroppableGames);
         return embedFieldBuilders;
     }
 
@@ -369,7 +369,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
             new()
             {
                 Name = "Current Score",
-                Value = Math.Round(publisherFound.GetTotalFantasyPoints(leagueChannel.LeagueYear.SupportedYear, leagueChannel.LeagueYear.Options), 1),
+                Value = Math.Round(publisherFound.GetTotalFantasyPoints(leagueChannel.CurrentLeagueYear.SupportedYear, leagueChannel.CurrentLeagueYear.Options), 1),
                 IsInline = false
             },
             new()
@@ -445,7 +445,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
         if (fantasyCriticUser != null)
         {
             publisherFound =
-                leagueChannel.LeagueYear.Publishers.FirstOrDefault(p => p.User.Id == fantasyCriticUser.Id
+                leagueChannel.CurrentLeagueYear.Publishers.FirstOrDefault(p => p.User.Id == fantasyCriticUser.Id
                                                                         && leagueChannel.ChannelID == channelId);
         }
 

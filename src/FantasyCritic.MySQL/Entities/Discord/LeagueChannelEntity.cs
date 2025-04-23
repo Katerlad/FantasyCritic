@@ -3,31 +3,34 @@ using FantasyCritic.Lib.Discord.Enums;
 namespace FantasyCritic.MySQL.Entities.Discord;
 internal class LeagueChannelEntity
 {
-    public LeagueChannelEntity()
-    {
 
-    }
-
-    public LeagueChannelEntity(ulong guildID, ulong channelID, Guid leagueID, bool sendLeagueMasterGameUpdates, NotableMissesSetting notableMissesSetting, ulong? bidAlertRoleID)
+    public LeagueChannelEntity(LeagueChannelRecord record)
     {
-        GuildID = guildID;
-        ChannelID = channelID;
-        LeagueID = leagueID;
-        SendLeagueMasterGameUpdates = sendLeagueMasterGameUpdates;
-        NotableMissesSetting = notableMissesSetting;
-        BidAlertRoleID = bidAlertRoleID;
+        GuildID = record.GuildID;
+        ChannelID = record.ChannelID;
+        LeagueID = record.LeagueID;
+        SendLeagueMasterGameUpdates = record.SendLeagueMasterGameUpdates;
+        NotableMissesSetting = record.NotableMissesSetting;
+        BidAlertRoleID = record.BidAlertRoleID;
+        SendEligibleSlotGameNewsOnly = record.SendEligibleSlotGameNewsOnly;
+        ActiveLeagueYears = record.ActiveLeagueYears;
+        CurrentLeagueYear = record.CurrentLeagueYear;
     }
 
     public ulong ChannelID { get; set; }
     public Guid LeagueID { get; set; }
     public ulong GuildID { get; set; }
     public bool SendLeagueMasterGameUpdates { get; set; }
-    public NotableMissesSetting NotableMissesSetting { get; set; }
+    public bool SendEligibleSlotGameNewsOnly { get; set; }
+    public IReadOnlyList<LeagueYear> ActiveLeagueYears { get; set; } = new List<LeagueYear>();
+    public LeagueYear CurrentLeagueYear { get; set; }
+    public NotableMissSetting NotableMissesSetting { get; set; } = NotableMissSetting.ScoreUpdates;
+    public GameNewsSettings GameNewsSettings { get; set; } = new GameNewsSettings();
     public ulong? BidAlertRoleID { get; set; }
 
     public LeagueChannelRecord ToDomain(LeagueYear leagueYear)
     {
-        return new LeagueChannelRecord(leagueYear, GuildID, ChannelID, SendLeagueMasterGameUpdates, NotableMissesSetting, gameNewsSettings, BidAlertRoleID);
+        return new LeagueChannelRecord(ActiveLeagueYears, CurrentLeagueYear, GuildID, ChannelID, LeagueID, SendLeagueMasterGameUpdates, SendEligibleSlotGameNewsOnly, NotableMissesSetting, GameNewsSettings, BidAlertRoleID);
     }
 
     public MinimalLeagueChannelRecord ToMinimalDomain()

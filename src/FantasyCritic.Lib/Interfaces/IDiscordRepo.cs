@@ -1,18 +1,17 @@
 using FantasyCritic.Lib.Discord.Enums;
-using FantasyCritic.Lib.Discord.Models;
 
 namespace FantasyCritic.Lib.Interfaces;
 public interface IDiscordRepo
 {
     Task SetLeagueChannel(Guid leagueID, ulong guildID, ulong channelID);
     Task SetConferenceChannel(Guid conferenceID, ulong guildID, ulong channelID);
-    Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, bool sendLeagueMasterGameUpdates, NotableMissesSetting notableMissesSetting);
-    Task SetGameNewsSetting(ulong guildID, ulong channelID, GameNewsSetting gameNewsSetting);
+    Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, bool sendLeagueMasterGameUpdates, NotableMissSetting notableMissesSetting);
+    Task SetGameNewsSetting(ulong guildID, ulong channelID, GameNewsSettings gameNewsSettings);
     Task SetSkippedGameNewsTags(ulong guildID, ulong channelID, IEnumerable<MasterGameTag> skippedTags);
     Task SetBidAlertRoleId(Guid leagueID, ulong guildID, ulong channelID, ulong? bidAlertRoleID);
     Task<bool> DeleteLeagueChannel(ulong guildID, ulong channelID);
     Task<bool> DeleteConferenceChannel(ulong guildID, ulong channelID);
-    Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetAllLeagueChannels();
+    Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetAllMinimalLeagueChannels();
     Task<IReadOnlyList<GameNewsOnlyChannelRecord>> GetAllGameNewsChannels();
     Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetLeagueChannels(Guid leagueID);
     Task<IReadOnlyList<MinimalConferenceChannel>> GetConferenceChannels(Guid conferenceID);

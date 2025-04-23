@@ -986,7 +986,7 @@ public class AdminService
 
     private async Task PushDiscordScoreChangeMessages(IReadOnlyList<LeagueYear> oldLeagueYears, IReadOnlyDictionary<Guid, PublisherGameCalculatedStats> calculatedStats)
     {
-        var leagueChannels = await _discordRepo.GetAllLeagueChannels();
+        var leagueChannels = await _discordRepo.GetAllMinimalLeagueChannels();
         var channelLookup = leagueChannels.ToLookup(x => x.LeagueID);
 
         foreach (var oldLeagueYear in oldLeagueYears)

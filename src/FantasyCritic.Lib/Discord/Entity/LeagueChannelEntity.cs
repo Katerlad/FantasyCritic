@@ -14,14 +14,35 @@ internal class LeagueChannelEntity : IDiscordChannel, IGameNewsReciever
 
     //GameNews
     public bool LeagueGameNewsEnabled { get; set; }
-    public NotableMissesSetting NotableMissSetting { get; set; }
-    public AdvancedGameNewsSettings GameNewsSettings { get; }
+
+    public bool SendEligibleSlotGameNewsOnly { get; set; }
+    public NotableMissSetting NotableMissSetting { get; set; }
+    public GameNewsSettings GameNewsSettings { get; }
+
+    public IReadOnlyList<LeagueYear> ActiveLeagueYears { get; set; } 
     public IRelevantGameNewsHandler RelevantGameNewsHandler { get; } 
     
 
     public LeagueChannelEntity(LeagueChannelRecord record)
     {
+        GuildID = record.GuildID;
+        ChannelID = record.ChannelID;
         GameNewsSettings = record.gameNewsSettings;
-        RelevantGameNewsHandler = new RelevantLeagueGameNewsHandler(record.gameNewsSettings);
+        LeagueGameNewsEnabled = record.SendLeagueMasterGameUpdates;
+        NotableMissSetting = record.NotableMissesSetting;
+        SendEligibleSlotGameNewsOnly = record.SendEligibleSlotGameNewsOnly;
+        ActiveLeagueYears = record.ActiveLeagueYears;
+        RelevantGameNewsHandler = new RelevantLeagueGameNewsHandler(this);
+    }
+
+    public LeagueChannelEntity(MinimalLeagueChannelRecord record, IReadOnlyList<LeagueYear> activeLeagueYears)
+    {
+        GuildID = record.GuildID;
+        ChannelID = record.ChannelID;
+        GameNewsSettings = new GameNewsSettings();
+        LeagueGameNewsEnabled = record.SendLeagueMasterGameUpdates;
+        NotableMissSetting = record.NotableMissesSetting;
+        ActiveLeagueYears = activeLeagueYears;
+        RelevantGameNewsHandler = new RelevantLeagueGameNewsHandler(this);
     }
 }

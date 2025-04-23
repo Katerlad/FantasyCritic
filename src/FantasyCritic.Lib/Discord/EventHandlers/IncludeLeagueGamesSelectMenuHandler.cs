@@ -1,5 +1,6 @@
 using Discord.Interactions;
 using Discord.WebSocket;
+using FantasyCritic.Lib.Discord.Enums;
 using FantasyCritic.Lib.Interfaces;
 using FantasyCritic.Lib.Services;
 using JetBrains.Annotations;
@@ -38,10 +39,10 @@ public class IncludeLeagueGamesSelectMenuHandler : InteractionModuleBase<SocketI
                 return;
             }
 
-            await _discordRepo.SetLeagueGameNewsSetting(leagueGameNewsChannel.LeagueYear.League.LeagueID,
+            await _discordRepo.SetLeagueGameNewsSetting(leagueGameNewsChannel.CurrentLeagueYear.League.LeagueID,
                 leagueGameNewsChannel.GuildID,
                 leagueGameNewsChannel.ChannelID,
-                valueToSet, TODO);
+                valueToSet, NotableMissSetting.ScoreUpdates);
             await DeleteOriginalResponseAsync();
             await FollowupAsync(
                 $"League Game Updates has been set to **{(valueToSet ? "ON" : "OFF")}**");

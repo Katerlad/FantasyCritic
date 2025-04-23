@@ -62,7 +62,7 @@ public class SpecialAuctionsCommand : InteractionModuleBase<SocketInteractionCon
             return;
         }
 
-        var leagueYear = leagueChannel.LeagueYear;
+        var leagueYear = leagueChannel.CurrentLeagueYear;
 
         var specialAuctions = await _gameAcquisitionService.GetActiveSpecialAuctionsForLeague(leagueYear);
 

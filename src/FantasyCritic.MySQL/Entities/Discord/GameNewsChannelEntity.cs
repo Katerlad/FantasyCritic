@@ -1,5 +1,3 @@
-using FantasyCritic.Lib.Discord.Models;
-
 namespace FantasyCritic.MySQL.Entities.Discord;
 internal class GameNewsChannelEntity
 {
@@ -8,19 +6,19 @@ internal class GameNewsChannelEntity
 
     }
 
-    public GameNewsChannelEntity(ulong guildID, ulong channelID, GameNewsSetting gameNewsSetting)
+    public GameNewsChannelEntity(ulong guildID, ulong channelID, GameNewsSettings gameNewsSetting)
     {
         GuildID = guildID;
         ChannelID = channelID;
-        GameNewsSetting = gameNewsSetting.Value;
+        GameNewsSettings = gameNewsSetting;
     }
 
     public ulong GuildID { get; set; }
     public ulong ChannelID { get; set; }
-    public string GameNewsSetting { get; set; } = null!;
+    public GameNewsSettings GameNewsSettings { get; set; } = null!;
 
     public GameNewsOnlyChannelRecord ToDomain(IEnumerable<MasterGameTag> skippedTags)
     {
-        return new GameNewsChannel(GuildID, ChannelID, skippedTags.ToList(), TODO);
+        return new GameNewsOnlyChannelRecord(GuildID, ChannelID, skippedTags.ToList(),GameNewsSettings);
     }
 }

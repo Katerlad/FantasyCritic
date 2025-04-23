@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using DiscordDotNetUtilities.Interfaces;
+using FantasyCritic.Lib.Discord.Enums;
 using FantasyCritic.Lib.Discord.Models;
 using FantasyCritic.Lib.Discord.UrlBuilders;
 using FantasyCritic.Lib.Interfaces;
@@ -39,9 +40,9 @@ public class ViewSettingsCommand : InteractionModuleBase<SocketInteractionContex
 
         var embedFieldBuilders = new List<EmbedFieldBuilder>();
 
-        var leagueDisplay = leagueChannel?.LeagueYear != null
-            ? new LeagueUrlBuilder(_baseAddress, leagueChannel.LeagueYear.League.LeagueID,
-                leagueChannel.LeagueYear.Year).BuildUrl(leagueChannel.LeagueYear.League.LeagueName)
+        var leagueDisplay = leagueChannel?.CurrentLeagueYear != null
+            ? new LeagueUrlBuilder(_baseAddress, leagueChannel.CurrentLeagueYear.League.LeagueID,
+                leagueChannel.CurrentLeagueYear.Year).BuildUrl(leagueChannel.CurrentLeagueYear.League.LeagueName)
             : "No league has been set. Use `/set-league` to configure a league.";
 
         var settingsMessage = "";
@@ -53,17 +54,17 @@ public class ViewSettingsCommand : InteractionModuleBase<SocketInteractionContex
             IsInline = false
         });
 
-        if (leagueChannel?.LeagueYear != null)
+        if (leagueChannel?.CurrentLeagueYear != null)
         {
             embedFieldBuilders.Add(new EmbedFieldBuilder
             {
                 Name = "Game News",
-                Value = GetGameNewsSettingDescription(leagueChannel.SendLeagueMasterGameUpdates, leagueChannel.SendNotableMisses, gameNewsChannel?.GameNewsSetting, gameNewsChannel?.SkippedTags),
+                Value = GetGameNewsSettingDescription(leagueChannel.SendLeagueMasterGameUpdates, leagueChannel.NotableMissesSetting, gameNewsChannel?.GameNewsSettings, gameNewsChannel?.SkippedTags),
                 IsInline = false
             });
 
             var publicBiddingRoleDisplay =
-                GetPublicBiddingRoleDisplayText(leagueChannel.LeagueYear.Options.PickupSystem,
+                GetPublicBiddingRoleDisplayText(leagueChannel.CurrentLeagueYear.Options.PickupSystem,
                     leagueChannel.BidAlertRoleID);
             embedFieldBuilders.Add(new EmbedFieldBuilder
             {
@@ -81,34 +82,43 @@ public class ViewSettingsCommand : InteractionModuleBase<SocketInteractionContex
     }
 
     private static string GetGameNewsSettingDescription(bool sendLeagueMasterGameUpdates,
-        bool sendNotableMisses, GameNewsSetting? gameNewsSetting, IReadOnlyList<MasterGameTag>? skippedTags)
+        NotableMissSetting sendNotableMisses, GameNewsSettings? gameNewsSetting, IReadOnlyList<MasterGameTag>? skippedTags)
     {
         var parts = new List<string>
         {
             sendLeagueMasterGameUpdates
                 ? "✅ League Master Game Updates"
                 : "❌ League Master Game Updates",
-            sendNotableMisses
-                ? "✅ Notable Misses"
-                : "❌ Notable Misses"
         };
-
         if (gameNewsSetting is null)
         {
             parts.Add("❌ Non-League Master Game Updates");
+            return string.Join("\n", parts);
         }
-        else if (gameNewsSetting.Equals(GameNewsSetting.All))
-        {
-            parts.Add("✅ All Master Game Updates");
-        }
-        else if (gameNewsSetting.Equals(GameNewsSetting.MightReleaseInYear))
-        {
-            parts.Add("✅ Any 'Might Release' Master Game Updates");
-        }
-        else if (gameNewsSetting.Equals(GameNewsSetting.WillReleaseInYear))
-        {
-            parts.Add("✅ Any 'Will Release' Master Game Updates");
-        }
+
+        parts.Add(gameNewsSetting.ShowMightReleaseInYearNews
+            ? "✅ Any 'Might Release' Master Game Updates"
+            : "❌ Any 'Might Release' Master Game Updates");
+
+        parts.Add(gameNewsSetting.ShowWillReleaseInYearNews
+            ? "✅ Any 'Will Release' Master Game Updates"
+            : "❌ Any 'Will Release' Master Game Updates");
+
+        parts.Add(gameNewsSetting.ShowScoreGameNews
+            ? "✅ Any 'Score' Master Game Updates"
+            : "❌ Any 'Score' Master Game Updates");
+
+        parts.Add(gameNewsSetting.ShowReleasedGameNews
+            ? "✅ Any 'Released' Master Game Updates"
+            : "❌ Any 'Released' Master Game Updates");
+
+        parts.Add(gameNewsSetting.ShowNewGameNews
+            ? "✅ Any 'New' Master Game Updates"
+            : "❌ Any 'New' Master Game Updates");
+
+        parts.Add(gameNewsSetting.ShowEditedGameNews
+            ? "✅ Any 'Edited' Master Game Updates"
+            : "❌ Any 'Edited' Master Game Updates");
 
         parts.Add(skippedTags != null
             ? $"✅ Skipping Tags: {(skippedTags.Any() ? string.Join(", ", skippedTags.Select(t => t.ReadableName)) : "NONE")}"

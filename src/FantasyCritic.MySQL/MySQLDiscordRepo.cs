@@ -30,14 +30,15 @@ public class MySQLDiscordRepo : IDiscordRepo
     public async Task SetLeagueChannel(Guid leagueID, ulong guildID, ulong channelID)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, true, new NotableMissesSetting(), null);
+        var minimalLeagueChannelRecord = new MinimalLeagueChannelRecord(leagueID, guildID, channelID,true, NotableMissSetting.ScoreUpdates, null);
         var existingChannel = await GetLeagueChannelEntity(guildID, channelID);
+        var existingChannelMinimal = existingChannel?.ToMinimalDomain();
         var sql = existingChannel == null
             ? "INSERT INTO tbl_discord_leaguechannel (GuildID,ChannelID,LeagueID,SendLeagueMasterGameUpdates,SendNotableMisses) VALUES (@GuildID, @ChannelID, @LeagueID, @SendLeagueMasterGameUpdates, @SendNotableMisses)"
             : "UPDATE tbl_discord_leaguechannel SET LeagueID=@LeagueID WHERE ChannelID=@ChannelID AND GuildID=@GuildID";
         var entity = existingChannel == null
-            ? leagueChannelEntity
-            : existingChannel;
+            ? minimalLeagueChannelRecord
+            : existingChannelMinimal;
         await connection.ExecuteAsync(sql, entity);
     }
 
@@ -52,23 +53,23 @@ public class MySQLDiscordRepo : IDiscordRepo
         await connection.ExecuteAsync(sql, conferenceChannelEntity);
     }
 
-    public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, bool sendLeagueMasterGameUpdates, NotableMissesSetting notableMissesSetting)
+    public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, bool sendLeagueMasterGameUpdates, NotableMissSetting notableMissesSetting)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, sendLeagueMasterGameUpdates, notableMissesSetting, null);
+        var minimalLeagueChannelRecord = new MinimalLeagueChannelRecord(leagueID, guildID, channelID, sendLeagueMasterGameUpdates, notableMissesSetting, null);
         var sql = "UPDATE tbl_discord_leaguechannel SET SendLeagueMasterGameUpdates=@SendLeagueMasterGameUpdates, SendNotableMisses=@SendNotableMisses WHERE LeagueID=@LeagueID AND GuildID=@GuildID AND ChannelID=@ChannelID";
-        await connection.ExecuteAsync(sql, leagueChannelEntity);
+        await connection.ExecuteAsync(sql, minimalLeagueChannelRecord);
     }
 
-    public async Task SetGameNewsSetting(ulong guildID, ulong channelID, GameNewsSetting gameNewsSetting)
+    public async Task SetGameNewsSetting(ulong guildID, ulong channelID, GameNewsSettings gameNewsSettings)
     {
-        bool deleting = gameNewsSetting.Equals(GameNewsSetting.Off);
+        bool deleting = gameNewsSettings.AllGameUpdatesEnabled == false;
         var deleteSQL = "DELETE FROM tbl_discord_gamenewschannel where GuildID=@GuildID AND ChannelID=@ChannelID;";
         var insertSQL = "INSERT IGNORE INTO tbl_discord_gamenewschannel(GuildID,ChannelID,GameNewsSetting) VALUES (@GuildID,@ChannelID,@GameNewsSetting);";
         var updateSQL = "UPDATE tbl_discord_gamenewschannel SET GameNewsSetting = @GameNewsSetting where GuildID=@GuildID AND ChannelID=@ChannelID;";
         var selectTagsSQL = "SELECT * from tbl_discord_gamenewschannelskiptag where GuildID=@guildID AND ChannelID=@channelID;";
         var deleteTagsSQL = "DELETE from tbl_discord_gamenewschannelskiptag where GuildID=@guildID AND ChannelID=@channelID;";
-        var gameNewsChannelEntity = new GameNewsChannelEntity(guildID, channelID, gameNewsSetting);
+        var gameNewsChannelEntity = new GameNewsChannelEntity(guildID, channelID, gameNewsSettings);
 
         var param = new
         {
@@ -119,9 +120,9 @@ public class MySQLDiscordRepo : IDiscordRepo
     public async Task SetBidAlertRoleId(Guid leagueID, ulong guildID, ulong channelID, ulong? bidAlertRoleID)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, true, new NotableMissesSetting(), bidAlertRoleID);
+        var minimalLeagueChannelRecord = new MinimalLeagueChannelRecord(leagueID, guildID, channelID, true, NotableMissSetting.ScoreUpdates, bidAlertRoleID);
         var sql = "UPDATE tbl_discord_leaguechannel SET BidAlertRoleID=@BidAlertRoleID WHERE LeagueID=@LeagueID AND GuildID=@GuildID AND ChannelID=@ChannelID";
-        await connection.ExecuteAsync(sql, leagueChannelEntity);
+        await connection.ExecuteAsync(sql, minimalLeagueChannelRecord);
     }
 
     public async Task<bool> DeleteLeagueChannel(ulong guildID, ulong channelID)
@@ -150,7 +151,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         return rowsDeleted >= 1;
     }
 
-    public async Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetAllLeagueChannels()
+    public async Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetAllMinimalLeagueChannels()
     {
         await using var connection = new MySqlConnection(_connectionString);
         const string sql = "select * from tbl_discord_leaguechannel";

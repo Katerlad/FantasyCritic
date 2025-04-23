@@ -5,6 +5,8 @@ using Discord.WebSocket;
 using DiscordDotNetUtilities;
 using DiscordDotNetUtilities.Interfaces;
 using FantasyCritic.Lib.DependencyInjection;
+using FantasyCritic.Lib.Discord.Entity;
+using FantasyCritic.Lib.Discord.Interfaces;
 using FantasyCritic.Lib.Discord.Models;
 using FantasyCritic.Lib.Discord.UrlBuilders;
 using FantasyCritic.Lib.Discord.Utilities;
@@ -136,28 +138,28 @@ public class DiscordPushService
             Logger.Information($"Score Update: {scoreUpdate.Game.GameName} - {scoreUpdate.OldCriticScore} -> {scoreUpdate.NewCriticScore}");
         }
 
-        var allChannels = await GetAllCombinedChannels(discordRepo, fantasyCriticRepo);
+        var allGameNewsRecievers = await GetAllGameNewsReceivers(discordRepo, fantasyCriticRepo);
         var preparedMessages = new List<PreparedDiscordMessage>();
 
         var today = _clock.GetToday();
-        foreach (var combinedChannel in allChannels)
+        foreach (var gameNewsReceiver in allGameNewsRecievers)
         {
-            var guild = _client.GetGuild(combinedChannel.GuildID);
-            var channel = guild?.GetChannel(combinedChannel.ChannelID);
+            var guild = _client.GetGuild(gameNewsReceiver.GuildID);
+            var channel = guild?.GetChannel(gameNewsReceiver.ChannelID);
             if (channel is not SocketTextChannel textChannel)
             {
                 continue;
             }
 
             var newMasterGamesToSend = _newMasterGameMessages
-                .Where(x => combinedChannel.CombinedSetting.NewGameIsRelevant(x.MasterGame, combinedChannel.ActiveLeagueYears, combinedChannel.ChannelKey, today))
+                .Where(x => gameNewsReceiver.RelevantGameNewsHandler.IsNewGameNewsRelevant(new(x.MasterGame, today)))
                 .ToList();
             var scoreUpdatesToSend = _gameCriticScoreUpdateMessages
-                .Where(x => combinedChannel.CombinedSetting.ScoredGameIsRelevant(x.Game, combinedChannel.ActiveLeagueYears, x.NewCriticScore, x.OldCriticScore, today))
+                .Where(x => gameNewsReceiver.RelevantGameNewsHandler.IsScoreGameNewsRelevant(new(x.Game, x.NewCriticScore, x.OldCriticScore, today)))
                 .ToList();
             var editsToSend = _masterGameEditMessages
-                .Where(x => combinedChannel.CombinedSetting.EditedGameIsRelevant(x.ExistingGame.MasterGame,
-                    x.ExistingGame.GetWillReleaseStatus() != x.EditedGame.GetWillReleaseStatus(), combinedChannel.ActiveLeagueYears, combinedChannel.ChannelKey, today))
+                .Where(x => gameNewsReceiver.RelevantGameNewsHandler.IsEditedGameNewsRelevant(new(x.ExistingGame.MasterGame,
+                    x.ExistingGame.GetWillReleaseStatus() != x.EditedGame.GetWillReleaseStatus(), today)))
                 .ToList();
 
             if (!newMasterGamesToSend.Any() && !scoreUpdatesToSend.Any() && !editsToSend.Any())
@@ -236,16 +238,16 @@ public class DiscordPushService
             }
 
             var allPublisherInActiveYears = new List<Publisher>();
-            if (combinedChannel.ActiveLeagueYears is not null)
+            if (gameNewsReceiver.ActiveLeagueYears is not null)
             {
-                allPublisherInActiveYears = combinedChannel.ActiveLeagueYears.SelectMany(x => x.Publishers).ToList();
+                allPublisherInActiveYears = gameNewsReceiver.ActiveLeagueYears.SelectMany(x => x.Publishers).ToList();
             }
 
             var messagesToSend = gameUpdateMessages
                 .Select(gameUpdateMessage =>
                 {
                     string publisherOfGameNoteFinalString = "";
-                    if (combinedChannel.ActiveLeagueYears is not null)
+                    if (gameNewsReceiver.ActiveLeagueYears is not null)
                     {
                         var publisherOfGameNote = GetPublisherOfGameNote(allPublisherInActiveYears, gameUpdateMessage.Key, today);
                         publisherOfGameNoteFinalString = $" [{publisherOfGameNote}]";
@@ -324,19 +326,19 @@ public class DiscordPushService
         var fantasyCriticRepo = scope.ServiceProvider.GetRequiredService<IFantasyCriticRepo>();
         var discordRepo = scope.ServiceProvider.GetRequiredService<IDiscordRepo>();
 
-        var allChannels = await GetAllCombinedChannels(discordRepo, fantasyCriticRepo);
+        var allGameNewsReceivers = await GetAllGameNewsReceivers(discordRepo, fantasyCriticRepo);
         var preparedMessages = new List<PreparedDiscordMessage>();
-        foreach (var combinedChannel in allChannels)
+        foreach (var receiver in allGameNewsReceivers)
         {
-            var guild = _client.GetGuild(combinedChannel.GuildID);
-            var channel = guild?.GetChannel(combinedChannel.ChannelID);
+            var guild = _client.GetGuild(receiver.GuildID);
+            var channel = guild?.GetChannel(receiver.ChannelID);
             if (channel is not SocketTextChannel textChannel)
             {
                 continue;
             }
 
             IReadOnlyList<MasterGameYear> relevantGamesForLeague = masterGamesReleasingToday
-                .Where(x => combinedChannel.CombinedSetting.ReleasedGameIsRelevant(x.MasterGame, combinedChannel.ActiveLeagueYears))
+                .Where(x => receiver.RelevantGameNewsHandler.IsReleasedGameNewsRelevant(new(x.MasterGame,_clock.GetToday())))
                 .ToList();
             if (!relevantGamesForLeague.Any())
             {
@@ -581,7 +583,7 @@ public class DiscordPushService
         using var scope = serviceScopeFactory.CreateScope();
         var discordRepo = scope.ServiceProvider.GetRequiredService<IDiscordRepo>();
 
-        var allChannels = await discordRepo.GetAllLeagueChannels();
+        var allChannels = await discordRepo.GetAllMinimalLeagueChannels();
         var channelLookup = allChannels.ToLookup(c => c.LeagueID);
 
         var preparedMessages = new List<PreparedDiscordMessage>();
@@ -650,7 +652,7 @@ public class DiscordPushService
         using var scope = serviceScopeFactory.CreateScope();
         var discordRepo = scope.ServiceProvider.GetRequiredService<IDiscordRepo>();
 
-        var allChannels = await discordRepo.GetAllLeagueChannels();
+        var allChannels = await discordRepo.GetAllMinimalLeagueChannels();
         var channelLookup = allChannels.ToLookup(c => c.LeagueID);
 
         var dropMessages = new List<PreparedDiscordMessage>();
@@ -1184,41 +1186,50 @@ public class DiscordPushService
         await DiscordRateLimitUtilities.RateLimitMessages(preparedMessages);
     }
 
-    private static async Task<IReadOnlyList<CombinedChannel>> GetAllCombinedChannels(IDiscordRepo discordRepo, IFantasyCriticRepo fantasyCriticRepo)
+    private static async Task<IReadOnlyList<IGameNewsReciever>> GetAllGameNewsReceivers(IDiscordRepo discordRepo, IFantasyCriticRepo fantasyCriticRepo)
     {
-        var leagueChannelsTask = discordRepo.GetAllLeagueChannels();
+        var minimalLeagueChannelsTask = discordRepo.GetAllMinimalLeagueChannels();
         var gameNewsChannelsTask = discordRepo.GetAllGameNewsChannels();
-        await Task.WhenAll(leagueChannelsTask, gameNewsChannelsTask);
+        await Task.WhenAll(minimalLeagueChannelsTask, gameNewsChannelsTask);
 
-        var leagueChannels = await leagueChannelsTask;
+        var minimalLeagueChannels = await minimalLeagueChannelsTask;
         var gameNewsChannels = await gameNewsChannelsTask;
 
-        var leagueIDs = leagueChannels.Select(x => x.LeagueID).Distinct().ToList();
+        var leagueIDs = minimalLeagueChannels.Select(x => x.LeagueID).Distinct().ToList();
         var leagueYears = await fantasyCriticRepo.GetActiveLeagueYears(leagueIDs);
         var leagueYearLookup = leagueYears.ToLookup(x => x.League.LeagueID);
 
-        var leagueChannelDictionary = leagueChannels.ToDictionary(x => x.ChannelKey);
+        var minimalLeagueChannelDictionary = minimalLeagueChannels.ToDictionary(x => x.ChannelKey);
         var gameNewsChannelDictionary = gameNewsChannels.ToDictionary(x => x.ChannelKey);
 
-        var channelKeys = leagueChannels.Select(x => x.ChannelKey)
+        var channelKeys = minimalLeagueChannels.Select(x => x.ChannelKey)
             .Concat(gameNewsChannels.Select(x => x.ChannelKey)).Distinct().ToList();
 
-        List<CombinedChannel> combinedChannels = new List<CombinedChannel>();
+        List<IGameNewsReciever> gameNewsReceiverChannels = new List<IGameNewsReciever>();
         foreach (var channelKey in channelKeys)
         {
-            var leagueChannel = leagueChannelDictionary.GetValueOrDefault(channelKey);
+            var minimalLeagueChannel = minimalLeagueChannelDictionary.GetValueOrDefault(channelKey);
             var gameNewsChannel = gameNewsChannelDictionary.GetValueOrDefault(channelKey);
-            MultiYearLeagueChannel? multiYearLeagueChannel = null;
-            if (leagueChannel is not null)
+
+
+            // Check is league channel
+            if (minimalLeagueChannel is not null)
             {
-                var activeLeagueYears = leagueYearLookup[leagueChannel.LeagueID].ToList();
-                multiYearLeagueChannel = leagueChannel.ToMultiYearLeagueChannel(activeLeagueYears);
+                //Create a league channel entity using minimal league and active league years
+                var activeLeagueYears = leagueYearLookup[minimalLeagueChannel.LeagueID].ToList();
+                var leagueChannelEntity = new LeagueChannelEntity(minimalLeagueChannel, activeLeagueYears);
+                gameNewsReceiverChannels.Add(leagueChannelEntity);
+            }
+            //Check if game news only channel
+            else if (gameNewsChannel is not null)
+            {
+                var gameNewsOnlyChannelEntity = new GameNewsOnlyChannelEntity(gameNewsChannel);
+                gameNewsReceiverChannels.Add(gameNewsOnlyChannelEntity);
             }
 
-            combinedChannels.Add(new CombinedChannel(multiYearLeagueChannel, gameNewsChannel));
         }
 
-        return combinedChannels;
+        return gameNewsReceiverChannels;
     }
 
     public async Task SendDraftStartEndMessage(LeagueYear leagueYear, bool isEnding)

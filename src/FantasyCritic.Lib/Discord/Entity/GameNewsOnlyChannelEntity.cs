@@ -9,13 +9,15 @@ internal class GameNewsOnlyChannelEntity : IDiscordChannel, IGameNewsReciever
     public ulong ChannelID { get; }
     public DiscordChannelKey ChannelKey => new DiscordChannelKey(GuildID, ChannelID);
     public IRelevantGameNewsHandler RelevantGameNewsHandler { get; }
-    public AdvancedGameNewsSettings GameNewsSettings { get; }
+    public GameNewsSettings GameNewsSettings { get; }
+    public IReadOnlyList<LeagueYear> ActiveLeagueYears { get; }
 
     public GameNewsOnlyChannelEntity(GameNewsOnlyChannelRecord record)
     {
         GuildID = record.GuildID;
         ChannelID = record.ChannelID;
-        GameNewsSettings = record.AdvancedGameNewsSettings;
-        RelevantGameNewsHandler = new RelevantGameNewsOnlyHandler(record.AdvancedGameNewsSettings);
+        GameNewsSettings = record.GameNewsSettings;
+        RelevantGameNewsHandler = new RelevantGameNewsOnlyHandler(record.GameNewsSettings,ChannelKey);
+        ActiveLeagueYears = new List<LeagueYear>();
     }
 }

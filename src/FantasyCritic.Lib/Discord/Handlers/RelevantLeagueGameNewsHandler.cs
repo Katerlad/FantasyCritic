@@ -1,30 +1,169 @@
+using FantasyCritic.Lib.Discord.Entity;
 using FantasyCritic.Lib.Discord.Enums;
 using FantasyCritic.Lib.Discord.Interfaces;
 using FantasyCritic.Lib.Discord.Models;
 using FantasyCritic.Lib.Discord.Models.GameNewsRecords;
-using FantasyCritic.Lib.Domain;
+using Serilog;
 
 
 namespace FantasyCritic.Lib.Discord.Handlers;
 internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
 {
+    private static readonly ILogger Logger = Log.ForContext<RelevantLeagueGameNewsHandler>();
     private readonly IReadOnlyList<LeagueYear> _activeLeagueYears;
     private bool _leagueGameNewsEnabled;
-    private NotableMissesSetting _notableMissesSetting;
-    private AdvancedGameNewsSettings _newsSettings;
-    public RelevantLeagueGameNewsHandler(AdvancedGameNewsSettings gameNewsSettings,bool leagueGameNewsEnabled, NotableMissesSetting notableMissesSetting, IReadOnlyList<LeagueYear> leagueYears)
+    private bool _showEligibleSlotGameNewsOnly;
+    private NotableMissSetting _notableMissSetting;
+    private GameNewsSettings _newsSettings;
+    private DiscordChannelKey _channelKey;
+    public RelevantLeagueGameNewsHandler(LeagueChannelEntity leagueChannelEntity)
     {
-        _leagueGameNewsEnabled = leagueGameNewsEnabled;
-        _notableMissesSetting = notableMissesSetting;
-        _newsSettings = gameNewsSettings;
-        _activeLeagueYears = leagueYears;
+        _leagueGameNewsEnabled = leagueChannelEntity.LeagueGameNewsEnabled;
+        _notableMissSetting = leagueChannelEntity.NotableMissSetting;
+        _newsSettings = leagueChannelEntity.GameNewsSettings;
+        _activeLeagueYears = leagueChannelEntity.ActiveLeagueYears;
+        _channelKey = leagueChannelEntity.ChannelKey;
+        _showEligibleSlotGameNewsOnly = leagueChannelEntity.SendEligibleSlotGameNewsOnly;
     }
 
     public bool IsNewGameNewsRelevant(NewGameNewsRecord newsRecord)
     {
 
-        MasterGame masterGame = newsRecord.masterGame;
-        LocalDate currentDate = newsRecord.currentDate;
+        MasterGame masterGame = newsRecord.MasterGame;
+        LocalDate currentDate = newsRecord.CurrentDate;
+
+        //Exit Early if the user has disabled new game news for this channel
+        if (_newsSettings.ShowNewGameNews == false)
+        {
+            return false;
+        }
+
+        //Common Relevance Logic
+        bool commonRelevance = CheckCommonLeagueRelevance(newsRecord);
+        if (commonRelevance == true)
+        {
+            return true;
+        }
+
+        //Specific New Game Relevance Logic
+        bool specificRelevance = false;
+
+        return specificRelevance;
+    }
+
+
+
+    public bool IsEditedGameNewsRelevant(EditedGameNewsRecord newsRecord)
+    {
+        MasterGame masterGame = newsRecord.MasterGame;
+        LocalDate currentDate = newsRecord.CurrentDate;
+
+        //Exit Early if the user has disabled game edit news for this channel
+        if (_newsSettings.ShowEditedGameNews == false)
+        {
+            return false;
+        }
+
+        //Common Relevance Logic
+        bool commonRelevance = CheckCommonLeagueRelevance(newsRecord);
+        if (commonRelevance == true)
+        {
+            return true;
+        }
+
+        //Specific Edited Game Relevance Logic
+        bool specificRelevance = false;
+
+        if(specificRelevance == true)
+        {
+            return true;
+        }
+
+        //Fallback
+        Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _channelKey);
+        return false;
+
+    }
+
+
+
+    public bool IsReleasedGameNewsRelevant(ReleaseGameNewsRecord newsRecord)
+    {
+        MasterGame masterGame = newsRecord.MasterGame;
+        LocalDate currentDate = newsRecord.CurrentDate;
+
+        //Exit Early if the user has disabled Released game news for this channel
+        if (_newsSettings.ShowReleasedGameNews == false)
+        {
+            return false;
+        }
+
+        //Common Relevance Logic
+        bool commonRelevance = CheckCommonLeagueRelevance(newsRecord);
+        if (commonRelevance == true)
+        {
+            return true;
+        }
+
+        //Specific Edited Game Relevance Logic
+        bool specificRelevance = false;
+
+        if (specificRelevance == true)
+        {
+            return true;
+        }
+
+        //Fallback
+        Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _channelKey);
+        return false;
+    }
+
+    public bool IsScoreGameNewsRelevant(ScoreGameNewsRecord newsRecord)
+    {
+        MasterGame masterGame = newsRecord.MasterGame;
+        LocalDate currentDate = newsRecord.CurrentDate;
+        bool initialScore = newsRecord.OldScore == null;
+
+        //Exit Early if the user has disabled score game news for this channel
+        if (_newsSettings.ShowScoreGameNews == false)
+        {
+            return false;
+        }
+
+        //Common Relevance Logic
+        bool commonRelevance = CheckCommonLeagueRelevance(newsRecord);
+        if (commonRelevance == true)
+        {
+            return true;
+        }
+
+        //Specific Score News Relevance Logic
+        bool specificRelevance = false;
+
+        bool isNotableMiss = newsRecord.MasterGame.IsReleased(currentDate)
+            && masterGame.HasAnyReviews
+            && masterGame.CriticScore >= NotableMissSetting.Threshold;
+
+        //If the game is a notable miss, check if the user wants to see it
+        if (isNotableMiss)
+        {
+            specificRelevance =  CheckNotableMissRelevance(newsRecord, initialScore);
+        }
+
+        if (specificRelevance == true)
+        {
+            return true;
+        }
+
+        //Fallback
+        Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _channelKey);
+        return false;
+    }
+
+    private bool CheckCommonLeagueRelevance(IGameNewsRecord newsRecord)
+    {
+        MasterGame masterGame = newsRecord.MasterGame;
+        LocalDate currentDate = newsRecord.CurrentDate;
 
 
         //The User has requested no game news be shown to their league channel
@@ -40,7 +179,7 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         }
 
         //If the game has any skipped tags dont show it!
-        if (newsRecord.masterGame.Tags.Intersect(_newsSettings.SkippedTags).Any())
+        if (masterGame.Tags.Intersect(_newsSettings.SkippedTags).Any())
         {
             return false;
         }
@@ -48,59 +187,62 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         //Now check the years in the league and compare the news settings 
         foreach (var leagueYear in _activeLeagueYears)
         {
+            bool inPublisherRoster = leagueYear.Publishers.Any(x => x.MyMasterGames.Contains(masterGame));
+            bool eligibleInYear = leagueYear.GameIsEligibleInAnySlot(masterGame, currentDate);
+
+
+            //If the game is in the publisher roster we always want to show it - unless we decide to make this a setting in the future
+            if (inPublisherRoster)
+            {
+                return true;
+            }
+
+            //If the game is not eligible in the league year, and user requested to not show ilegible games, skip it
+            if (!eligibleInYear && !_showEligibleSlotGameNewsOnly)
+            {
+                return false;
+            }
+
             //This will provide game news for any game that is slated to release in the leagues years
-            if (_newsSettings.WillReleaseInYearEnabled && masterGame.WillReleaseInYear(leagueYear.Year))
+            if (_newsSettings.ShowWillReleaseInYearNews && masterGame.WillReleaseInYear(leagueYear.Year))
             {
                 return true;
             }
 
             //This will provide game updates for any game that might release in the leagues years
-            if (_newsSettings.MightReleaseInYearEnabled && masterGame.MightReleaseInYear(leagueYear.Year))
+            if (_newsSettings.ShowMightReleaseInYearNews && masterGame.MightReleaseInYear(leagueYear.Year))
             {
                 return true;
             }
         }
 
         //Fallback
+        Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _channelKey);
         return false;
     }
-    public bool IsEditedGameNewsRelevant(EditedGameNewsRecord newsRecord)
-    {
-        throw new NotImplementedException();
-    }
 
-    
-
-    public bool IsReleasedGameNewsRelevant(ReleaseGameNewsRecord newsRecord)
+    private bool CheckNotableMissRelevance(IGameNewsRecord newsRecord, bool initialScore)
     {
-        //If combined channel has active league years we are dealing with a League Channel
-        //League Channels only get Released Game Updates if League Game News is enabled
-        if (activeLeagueYears is not null)
+        MasterGame masterGame = newsRecord.MasterGame;
+        LocalDate currentDate = newsRecord.CurrentDate;
+
+
+        if (_notableMissSetting == NotableMissSetting.None)
         {
-            foreach (var leagueYear in activeLeagueYears)
-            {
-                bool isClaimedByPublisher = leagueYear.Publishers.Any(x => x.MyMasterGames.Contains(masterGame));
-
-                //We always want to send updates of a game if a publisher is assigned to it
-                if (isClaimedByPublisher)
-                {
-                    return true;
-                }
-
-                //We might want to skip tags in the future
-                if (masterGame.Tags.Intersect(_skippedTags).Any())
-                {
-                    continue;
-                }
-            }
-            //Fallback
-            Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, discordChannelKey);
             return false;
         }
-    }
-
-    public bool IsScoreGameNewsRelevant(ScoreGameNewsRecord newsRecord)
-    {
-        throw new NotImplementedException();
+        else if (_notableMissSetting == NotableMissSetting.ScoreUpdates)
+        {
+            return true;
+        }
+        else if (_notableMissSetting == NotableMissSetting.InitialScore)
+        {
+            if (initialScore) return true;
+            else return false;
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException(nameof(_notableMissSetting), _notableMissSetting, null);
+        }
     }
 }
