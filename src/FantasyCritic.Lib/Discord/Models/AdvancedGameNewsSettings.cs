@@ -9,7 +9,7 @@ public class AdvancedGameNewsSettings
     public bool MightReleaseInYearEnabled { get; set; }
     public bool WillReleaseInYearEnabled { get; set; }
     public bool UnannouncedGameNewsEnabled { get; set; }
-    public bool AllGameUpdatedEnabled { get => GetAllGameUpdatesEnabled(); set => SetAllGameUpdatesEnabled(value); }
+    public bool AllGameUpdatesEnabled { get => GetAllGameUpdatesEnabled(); set => SetAllGameUpdatesEnabled(value); }
     public bool AllNonLeagueGameUpdatesEnabled{get => GetAllNonLeagueGameUpdatesEnabled(); set => SetAllNonLeagueGameUpdatesEnabled(value); }
     public NotableMissesSetting NotableMissSetting { get; set; }
 
