@@ -63,38 +63,75 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task SetGameNewsSetting(ulong guildID, ulong channelID, GameNewsSettings gameNewsSettings)
     {
-        bool deleting = gameNewsSettings.AllGameUpdatesEnabled == false;
-        var deleteSQL = "DELETE FROM tbl_discord_gamenewschannel where GuildID=@GuildID AND ChannelID=@ChannelID;";
-        var insertSQL = "INSERT IGNORE INTO tbl_discord_gamenewschannel(GuildID,ChannelID,GameNewsSetting) VALUES (@GuildID,@ChannelID,@GameNewsSetting);";
-        var updateSQL = "UPDATE tbl_discord_gamenewschannel SET GameNewsSetting = @GameNewsSetting where GuildID=@GuildID AND ChannelID=@ChannelID;";
-        var selectTagsSQL = "SELECT * from tbl_discord_gamenewschannelskiptag where GuildID=@guildID AND ChannelID=@channelID;";
-        var deleteTagsSQL = "DELETE from tbl_discord_gamenewschannelskiptag where GuildID=@guildID AND ChannelID=@channelID;";
-        var gameNewsChannelEntity = new GameNewsChannelEntity(guildID, channelID, gameNewsSettings);
+        bool deleting = !gameNewsSettings.AllGameUpdatesEnabled;
 
-        var param = new
-        {
-            guildID,
-            channelID
-        };
+        var deleteChannelSQL = "DELETE FROM tbl_discord_gamenewschannel WHERE GuildID=@GuildID AND ChannelID=@ChannelID;";
+        var deleteOptionsSQL = "DELETE FROM tbl_discord_gamenewsoptions WHERE GuildID=@GuildID AND ChannelID=@ChannelID;";
+        var insertChannelSQL = "INSERT INTO tbl_discord_gamenewschannel (GuildID, ChannelID) VALUES (@GuildID, @ChannelID);";
+
+        var insertOptionsSQL = @"
+        REPLACE INTO tbl_discord_gamenewsoptions (
+            GuildID, ChannelID,
+            ShowMightReleaseInYearNews,
+            ShowWillReleaseInYearNews,
+            ShowScoreGameNews,
+            ShowReleasedGameNews,
+            ShowNewGameNews,
+            ShowEditedGameNews
+        ) VALUES (
+            @GuildID, @ChannelID,
+            @ShowMightReleaseInYearNews,
+            @ShowWillReleaseInYearNews,
+            @ShowScoreGameNews,
+            @ShowReleasedGameNews,
+            @ShowNewGameNews,
+            @ShowEditedGameNews
+        );";
+
+        var selectTagsSQL = "SELECT * FROM tbl_discord_gamenewschannelskiptag WHERE GuildID=@GuildID AND ChannelID=@ChannelID;";
+        var deleteTagsSQL = "DELETE FROM tbl_discord_gamenewschannelskiptag WHERE GuildID=@GuildID AND ChannelID=@ChannelID;";
 
         await using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
 
-        var masterGameTagEntities = await connection.QueryAsync<GameNewsChannelSkippedTagEntity>(selectTagsSQL, param);
+        var param = new
+        {
+            GuildID = guildID,
+            ChannelID = channelID
+        };
+
+        var masterGameTagEntities = (await connection.QueryAsync<GameNewsChannelSkippedTagEntity>(selectTagsSQL, param)).ToList();
 
         await using var transaction = await connection.BeginTransactionAsync();
+
         await connection.ExecuteAsync(deleteTagsSQL, param, transaction);
-        await connection.ExecuteAsync(deleteSQL, gameNewsChannelEntity, transaction);
-        if (deleting)
+        await connection.ExecuteAsync(deleteChannelSQL, param, transaction);
+        await connection.ExecuteAsync(deleteOptionsSQL, param, transaction);
+
+        if (!deleting)
         {
-            await connection.ExecuteAsync(deleteSQL, gameNewsChannelEntity, transaction);
-        }
-        else
-        {
-            await connection.ExecuteAsync(insertSQL, gameNewsChannelEntity, transaction);
-            await connection.ExecuteAsync(updateSQL, gameNewsChannelEntity, transaction);
+            // Insert channel row
+            await connection.ExecuteAsync(insertChannelSQL, param, transaction);
+
+            // Insert or update options row
+            var optionsParam = new
+            {
+                GuildID = guildID,
+                ChannelID = channelID,
+                gameNewsSettings.ShowMightReleaseInYearNews,
+                gameNewsSettings.ShowWillReleaseInYearNews,
+                gameNewsSettings.ShowScoreGameNews,
+                gameNewsSettings.ShowReleasedGameNews,
+                gameNewsSettings.ShowNewGameNews,
+                gameNewsSettings.ShowEditedGameNews
+            };
+
+            await connection.ExecuteAsync(insertOptionsSQL, optionsParam, transaction);
+
+            // Re-insert tag skips if they existed
             await connection.BulkInsertAsync(masterGameTagEntities, "tbl_discord_gamenewschannelskiptag", 500, transaction);
         }
+
         await transaction.CommitAsync();
     }
 
@@ -292,8 +329,9 @@ public class MySQLDiscordRepo : IDiscordRepo
         var possibleTags = await _masterGameRepo.GetMasterGameTags();
 
         await using var connection = new MySqlConnection(_connectionString);
-        const string channelSQL = "select * from tbl_discord_gamenewschannel WHERE GuildID = @guildID AND ChannelID = @channelID;";
-        const string tagSQL = "select * from tbl_discord_gamenewschannelskiptag WHERE GuildID = @guildID AND ChannelID = @channelID;";
+        const string channelSQL = "SELECT * FROM tbl_discord_gamenewschannel WHERE GuildID = @guildID AND ChannelID = @channelID;";
+        const string tagSQL = "SELECT * FROM tbl_discord_gamenewschannelskiptag WHERE GuildID = @guildID AND ChannelID = @channelID;";
+        const string optionsSQL = "SELECT * FROM tbl_discord_gamenewsoptions WHERE GuildID = @guildID AND ChannelID = @channelID;";
 
         var queryObject = new
         {
@@ -301,14 +339,45 @@ public class MySQLDiscordRepo : IDiscordRepo
             channelID
         };
 
+        // Query the GameNewsChannel entity
         var entity = await connection.QuerySingleOrDefaultAsync<GameNewsChannelEntity>(channelSQL, queryObject);
-        var tagEntities = await connection.QueryAsync<GameNewsChannelSkippedTagEntity>(tagSQL, queryObject);
+        if (entity == null)
+        {
+            return null; // No GameNewsChannel found
+        }
 
+        // Query the associated tags
+        var tagEntities = await connection.QueryAsync<GameNewsChannelSkippedTagEntity>(tagSQL, queryObject);
         var tagAssociations = tagEntities.Select(x => x.TagName).ToList();
         IReadOnlyList<MasterGameTag> tags = possibleTags
             .Where(x => tagAssociations.Contains(x.Name))
             .ToList();
-        return entity?.ToDomain(tags);
+
+        // Query the associated GameNewsOptions
+        var optionsEntity = await connection.QuerySingleOrDefaultAsync<GameNewsOptionsEntity>(optionsSQL, queryObject);
+        if (optionsEntity == null)
+        {
+            throw new InvalidOperationException($"GameNewsOptions not found for GuildID: {guildID}, ChannelID: {channelID}");
+        }
+
+        // Map the GameNewsOptions to GameNewsSettings
+        var gameNewsSettings = new GameNewsSettings
+        {
+            ShowMightReleaseInYearNews = optionsEntity.ShowMightReleaseInYearNews,
+            ShowWillReleaseInYearNews = optionsEntity.ShowWillReleaseInYearNews,
+            ShowScoreGameNews = optionsEntity.ShowScoreGameNews,
+            ShowReleasedGameNews = optionsEntity.ShowReleasedGameNews,
+            ShowNewGameNews = optionsEntity.ShowNewGameNews,
+            ShowEditedGameNews = optionsEntity.ShowEditedGameNews
+        };
+
+        // Return the combined result
+        return new GameNewsOnlyChannelRecord(
+            guildID,
+            channelID,
+            tags,
+            gameNewsSettings
+        );
     }
 
     public async Task<MinimalLeagueChannelRecord?> GetMinimalLeagueChannel(ulong guildID, ulong channelID)

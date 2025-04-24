@@ -1,4 +1,4 @@
-CREATE TABLE `tbl_discord_notablemissoptions` (
+CREATE TABLE `tbl_discord_notablemiss_setting` (
 	`Name` VARCHAR(50) NOT NULL,
 	PRIMARY KEY (`Name`) USING BTREE
 )
@@ -18,3 +18,5 @@ UPDATE `tbl_discord_leaguechannel` SET `NotableMissSetting` = 'None' WHERE `Send
 
 ALTER TABLE `tbl_discord_leaguechannel`
 	CHANGE COLUMN `NotableMissSetting` `NotableMissSetting` VARCHAR(50) NOT NULL AFTER `BidAlertRoleID`;
+
+Alter Table `tbl_discord_leaguechannel` DROP COLUMN `SendNotableMisses`;
