@@ -141,6 +141,32 @@ public class SetGameNewsCommand : InteractionModuleBase<SocketInteractionContext
                     await FollowupAsync(IncludeLeagueGamesQuestion, components: includeLeagueGamesMenuComponent);
                 }
             }
+            else
+            {
+                if (requestedSettingEnum.Equals(RequestedGameNewsSetting.LeagueGamesOnly))
+                {
+                    await FollowupAsync(embed: _discordFormatter.BuildErrorEmbedWithUserFooter(
+                        "No Change Made to Game News Configuration",
+                        $"You must have a league associated with this channel in order to choose the League Games Only option." +
+                        $"\nThe current Game News Setting is still **{gameNewsChannel?.GameNewsSettings.ToString() ?? "Not Set"}**.",
+                        Context.User));
+                    return;
+                }
+                
+                if (requestedSettingEnum.Equals(RequestedGameNewsSetting.MightReleaseInYear) || requestedSettingEnum.Equals(RequestedGameNewsSetting.WillReleaseInYear))
+                {
+                    var gameSettings = requestedSettingEnum.ToNormalSetting();
+                    await _discordRepo.SetGameNewsSetting(Context.Guild.Id, Context.Channel.Id, gameSettings);
+                    await _discordRepo.SetSkippedGameNewsTags(Context.Guild.Id, Context.Channel.Id, tagsToSkip);
+                
+                    await FollowupAsync(embed: _discordFormatter.BuildRegularEmbedWithUserFooter(
+                        "Game News Configuration Saved",
+                        BuildGameNewsSettingsDisplayText(requestedSettingEnum, false, false, tagsToSkip),
+                        Context.User));
+                    return;
+                }
+
+            }
         }
         else
         {
