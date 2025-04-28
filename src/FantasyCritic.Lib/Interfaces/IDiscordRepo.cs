@@ -1,4 +1,5 @@
 using FantasyCritic.Lib.Discord.Enums;
+using FantasyCritic.Lib.Discord.Models;
 
 namespace FantasyCritic.Lib.Interfaces;
 public interface IDiscordRepo
@@ -11,6 +12,7 @@ public interface IDiscordRepo
     Task SetBidAlertRoleId(Guid leagueID, ulong guildID, ulong channelID, ulong? bidAlertRoleID);
     Task<bool> DeleteLeagueChannel(ulong guildID, ulong channelID);
     Task<bool> DeleteConferenceChannel(ulong guildID, ulong channelID);
+    Task<bool> DeleteGameNewsChannel(ulong guildID, ulong channelID);
     Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetAllMinimalLeagueChannels();
     Task<IReadOnlyList<GameNewsOnlyChannelRecord>> GetAllGameNewsChannels();
     Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetLeagueChannels(Guid leagueID);
@@ -20,4 +22,5 @@ public interface IDiscordRepo
     Task<ConferenceChannel?> GetConferenceChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null);
     Task<GameNewsOnlyChannelRecord?> GetGameNewsChannel(ulong guildID, ulong channelID);
     Task RemoveAllLeagueChannelsForLeague(Guid leagueID);
+    Task<GameNewsAdvancedCommandSettings?> GetGameNewsAdvancedCommandSettings(ulong guildID, ulong channelID);
 }

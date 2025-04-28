@@ -2,7 +2,6 @@ using Discord.WebSocket;
 using Discord;
 using Discord.Interactions;
 using FantasyCritic.Lib.DependencyInjection;
-using System.Threading.Channels;
 
 namespace FantasyCritic.Lib.Discord;
 public class DiscordBotService
@@ -57,6 +56,9 @@ public class DiscordBotService
                 {
                     case InteractionCommandError.UnmetPrecondition:
                         Serilog.Log.Error("Unmet Precondition {0}", result.Error.ToString());
+                        break;
+                    case InteractionCommandError.UnknownCommand:
+                        Serilog.Log.Error($"Unknown Command: {result.ErrorReason}");
                         break;
                     default:
                         break;
