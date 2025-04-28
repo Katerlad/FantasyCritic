@@ -5,10 +5,10 @@ using System.Text;
 namespace FantasyCritic.Lib.Discord.Models;
 public class GameNewsAdvancedCommandSettings
 {
-    public bool? EnableGameNews { get; set; } = false;
-    public bool? ShowEligibleGameNewsOnly { get; set; }
+    public bool? EnableGameNews { get; set; } = null;
+    public bool? ShowEligibleGameNewsOnly { get; set; } = null;
 
-    public bool? ShowCurrentYearGameNewsOnly { get; set; }
+    public bool? ShowCurrentYearGameNewsOnly { get; set; } = null;
     public NotableMissSetting? NotableMissSetting { get; set; } = null;
     public bool ShowMightReleaseInYearNews { get; set; }
     public bool ShowWillReleaseInYearNews { get; set; }
@@ -16,37 +16,39 @@ public class GameNewsAdvancedCommandSettings
     public bool ShowAlreadyReleasedGameNews { get; set; }
     public bool ShowNewGameNews { get; set; }
     public bool ShowEditedGameNews { get; set; }
-    public List<MasterGameTag>? SkippedTags { get; set; } = new List<MasterGameTag>();
+    public List<MasterGameTag> SkippedTags { get; set; } = new List<MasterGameTag>();
 
     public bool Recommended
     {
         get
         {
-            return (EnableGameNews == true || EnableGameNews == null)&&
+            return (EnableGameNews == true || EnableGameNews == null) &&
                    (ShowEligibleGameNewsOnly == true || ShowEligibleGameNewsOnly == null) &&
                    (ShowCurrentYearGameNewsOnly == true || ShowCurrentYearGameNewsOnly == null) &&
-                   NotableMissSetting == NotableMissSetting.ScoreUpdates &&
+                   (NotableMissSetting == NotableMissSetting.ScoreUpdates || NotableMissSetting == null) &&
                    ShowMightReleaseInYearNews &&
                    ShowWillReleaseInYearNews &&
                    ShowScoreGameNews &&
                    ShowAlreadyReleasedGameNews &&
                    ShowNewGameNews &&
-                   ShowEditedGameNews;
+                   ShowEditedGameNews &&
+                   SkippedTags.Count == 0;
         }
         set
         {
             if (value)
             {
                 EnableGameNews = true;
-                ShowEligibleGameNewsOnly = true;
-                ShowCurrentYearGameNewsOnly = true;
-                NotableMissSetting = NotableMissSetting.ScoreUpdates;
+                ShowEligibleGameNewsOnly = ShowEligibleGameNewsOnly == null ? null : false;
+                ShowCurrentYearGameNewsOnly = ShowCurrentYearGameNewsOnly == null ? null : false;
+                NotableMissSetting = NotableMissSetting == null ? null : NotableMissSetting.ScoreUpdates;
                 ShowMightReleaseInYearNews = true;
                 ShowWillReleaseInYearNews = true;
                 ShowScoreGameNews = true;
                 ShowAlreadyReleasedGameNews = true;
                 ShowNewGameNews = true;
                 ShowEditedGameNews = true;
+                SkippedTags = new();
             }
         }
     }
@@ -69,12 +71,12 @@ public class GameNewsAdvancedCommandSettings
         string GetEmoji(bool? setting) => setting == true ? "✅" : setting == false ? "❌" : string.Empty;
 
         var embedMessage = new StringBuilder();
-        embedMessage.AppendLine("**Current Game News Settings**");
+        embedMessage.AppendLine("\n**Current Game News Settings**");
         embedMessage.AppendLine("------------------------------");
 
         embedMessage.AppendLine("\n**General News Settings:**");
-        embedMessage.AppendLine($"  -- Game News Enabled: {(EnableGameNews == true ? "**True**" : "**False**")}");
-        embedMessage.AppendLine($"  -- Is League Channel: {(ShowEligibleGameNewsOnly == null ? "**True**" : "**False**")}");
+        embedMessage.AppendLine($"  -- Game News Enabled: {(EnableGameNews == false ? "**False**" : "**True**")}");
+        embedMessage.AppendLine($"  -- Is League Channel: {(ShowEligibleGameNewsOnly != null ? "**True**" : "**False**")}");
         embedMessage.AppendLine($"  -- Setting State: {(Recommended == true ? "**Recommended**" : "**Custom**")}");
 
         

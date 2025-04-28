@@ -58,9 +58,11 @@ namespace FantasyCritic.Lib.Discord.Commands
 
                 bool isLeagueChannel = leagueChannel != null;
 
+                //If channel has no command settings, create a new one and set it to recommended settings
                 if (commandSettings == null)
                 {
                     commandSettings = new GameNewsAdvancedCommandSettings();
+                    commandSettings.Recommended = true;
                     //await _discordRepo.SetLeagueGameNewsSetting();
                     await _discordRepo.SetGameNewsSetting(Context.Guild.Id, Context.Channel.Id, commandSettings.ToGameNewsSettings());
                 }
@@ -92,7 +94,7 @@ namespace FantasyCritic.Lib.Discord.Commands
                 if (isLeagueChannel)
                 {
                     // If game news is currently off, show only the enable option
-                    if (commandSettings.EnableGameNews == false)
+                    if (commandSettings.EnableGameNews == false || commandSettings.EnableGameNews == null)
                     {
                         await SendDisabledGameNewsMessage(commandSettings);
                     }
@@ -103,7 +105,7 @@ namespace FantasyCritic.Lib.Discord.Commands
                 }
                 else
                 {
-                    if (commandSettings.EnableGameNews == false)
+                    if (commandSettings.EnableGameNews == false || commandSettings.EnableGameNews == null)
                     {
                         await SendDisabledGameNewsMessage(commandSettings);
                     }
@@ -142,12 +144,12 @@ namespace FantasyCritic.Lib.Discord.Commands
         private async Task SendLeagueGameNewsSnapshot(GameNewsAdvancedCommandSettings settings)
         {
             var message = await FollowupAsync(settings.ToDiscordMessage(), components: GetLeagueSnapshotComponent());
-            _channelSnapshotLookup.TryAdd(Context.Channel.Id, message.Id);
+            _channelSnapshotLookup[Context.Channel.Id] = message.Id;
         }
         private async Task SendGameNewsOnlySnapShot(GameNewsAdvancedCommandSettings settings)
         {
            var message = await FollowupAsync(settings.ToDiscordMessage(), components: GetGameNewsOnlySnapshotComponent());
-            _channelSnapshotLookup.TryAdd(Context.Channel.Id, message.Id);
+            _channelSnapshotLookup[Context.Channel.Id] = message.Id;
         }
         private async Task UpdateSnapShotMessage(GameNewsAdvancedCommandSettings settings)
         {
@@ -291,12 +293,13 @@ namespace FantasyCritic.Lib.Discord.Commands
                     break;
 
                 case "enable_game_news":
-                    settings.EnableGameNews = !settings.EnableGameNews;
+                    settings.EnableGameNews = true;
                     await CreateNewGameNewsChannel(settings);
                     await SendGameNewsSnapShotMessage(settings);
                     break;
 
                 case "disable_game_news":
+                    settings.EnableGameNews = false;
                     await DeleteExistingGameNewsChannel();
                     await Context.Channel.DeleteMessageAsync(snapshotMessageID);
                     await FollowupAsync("Game News has been disabled", ephemeral: true);
@@ -396,7 +399,7 @@ namespace FantasyCritic.Lib.Discord.Commands
                         .Where(tag => selectedValues.Contains(tag.Name))
                         .ToList();
 
-                    settings.SkippedTags = selectedTags;
+                    settings.SkippedTags = selectedTags ?? settings.SkippedTags;
 
                     await UpdateGameNewsSettings(settings);
                     await UpdateSnapShotMessage(settings);
