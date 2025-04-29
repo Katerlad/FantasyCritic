@@ -42,7 +42,7 @@ public class IncludeLeagueGamesSelectMenuHandler : InteractionModuleBase<SocketI
             await _discordRepo.SetLeagueGameNewsSetting(leagueGameNewsChannel.CurrentLeagueYear.League.LeagueID,
                 leagueGameNewsChannel.GuildID,
                 leagueGameNewsChannel.ChannelID,
-                valueToSet, NotableMissSetting.ScoreUpdates);
+                NotableMissSetting.ScoreUpdates, valueToSet, valueToSet);
             await DeleteOriginalResponseAsync();
             await FollowupAsync(
                 $"League Game Updates has been set to **{(valueToSet ? "ON" : "OFF")}**");

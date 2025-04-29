@@ -5,7 +5,7 @@ using System.Text;
 namespace FantasyCritic.Lib.Discord.Models;
 public class GameNewsAdvancedCommandSettings
 {
-    public bool? EnableGameNews { get; set; } = null;
+    public bool EnableGameNews { get; set; }
     public bool? ShowEligibleGameNewsOnly { get; set; } = null;
 
     public bool? ShowCurrentYearGameNewsOnly { get; set; } = null;
@@ -22,9 +22,8 @@ public class GameNewsAdvancedCommandSettings
     {
         get
         {
-            return (EnableGameNews == true || EnableGameNews == null) &&
-                   (ShowEligibleGameNewsOnly == true || ShowEligibleGameNewsOnly == null) &&
-                   (ShowCurrentYearGameNewsOnly == true || ShowCurrentYearGameNewsOnly == null) &&
+            return (ShowEligibleGameNewsOnly == false || ShowEligibleGameNewsOnly == null) &&
+                   (ShowCurrentYearGameNewsOnly == false || ShowCurrentYearGameNewsOnly == null) &&
                    (NotableMissSetting == NotableMissSetting.ScoreUpdates || NotableMissSetting == null) &&
                    ShowMightReleaseInYearNews &&
                    ShowWillReleaseInYearNews &&
@@ -38,7 +37,6 @@ public class GameNewsAdvancedCommandSettings
         {
             if (value)
             {
-                EnableGameNews = true;
                 ShowEligibleGameNewsOnly = ShowEligibleGameNewsOnly == null ? null : false;
                 ShowCurrentYearGameNewsOnly = ShowCurrentYearGameNewsOnly == null ? null : false;
                 NotableMissSetting = NotableMissSetting == null ? null : NotableMissSetting.ScoreUpdates;
@@ -53,11 +51,24 @@ public class GameNewsAdvancedCommandSettings
         }
     }
 
+    public void SetLeagueRecommendedSettings()
+    {
+        ShowEligibleGameNewsOnly = false;
+        ShowCurrentYearGameNewsOnly = false;
+        NotableMissSetting = NotableMissSetting.ScoreUpdates;
+        ShowMightReleaseInYearNews = true;
+        ShowWillReleaseInYearNews = true;
+        ShowScoreGameNews = true;
+        ShowAlreadyReleasedGameNews = true;
+        ShowNewGameNews = true;
+        ShowEditedGameNews = true;
+    }
 
     public GameNewsSettings ToGameNewsSettings()
     {
         return new GameNewsSettings()
         {
+            EnableGameNews = EnableGameNews,
             ShowMightReleaseInYearNews = ShowMightReleaseInYearNews,
             ShowWillReleaseInYearNews = ShowWillReleaseInYearNews,
             ShowScoreGameNews = ShowScoreGameNews,

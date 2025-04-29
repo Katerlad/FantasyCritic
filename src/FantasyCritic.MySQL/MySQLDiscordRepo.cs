@@ -2,7 +2,9 @@ using FantasyCritic.Lib.DependencyInjection;
 using FantasyCritic.Lib.Discord.Enums;
 using FantasyCritic.Lib.Discord.Models;
 using FantasyCritic.Lib.Domain.Conferences;
+using FantasyCritic.Lib.Extensions;
 using FantasyCritic.Lib.Interfaces;
+using FantasyCritic.MySQL.Entities;
 using FantasyCritic.MySQL.Entities.Discord;
 using System.Data;
 
@@ -32,11 +34,11 @@ public class MySQLDiscordRepo : IDiscordRepo
     public async Task SetLeagueChannel(Guid leagueID, ulong guildID, ulong channelID)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var minimalLeagueChannelRecord = new MinimalLeagueChannelRecord(leagueID, guildID, channelID, true, NotableMissSetting.ScoreUpdates, null);
+        var minimalLeagueChannelRecord = new MinimalLeagueChannelRecord(guildID, channelID, leagueID, NotableMissSetting.None.ToString(), null);
         var existingChannel = await GetLeagueChannelEntity(guildID, channelID);
         var existingChannelMinimal = existingChannel?.ToMinimalDomain();
         var sql = existingChannel == null
-            ? "INSERT INTO tbl_discord_leaguechannel (GuildID,ChannelID,LeagueID,SendLeagueMasterGameUpdates,SendNotableMisses) VALUES (@GuildID, @ChannelID, @LeagueID, @SendLeagueMasterGameUpdates, @SendNotableMisses)"
+            ? "INSERT INTO tbl_discord_leaguechannel (GuildID,ChannelID,LeagueID) VALUES (@GuildID, @ChannelID, @LeagueID)"
             : "UPDATE tbl_discord_leaguechannel SET LeagueID=@LeagueID WHERE ChannelID=@ChannelID AND GuildID=@GuildID";
         var entity = existingChannel == null
             ? minimalLeagueChannelRecord
@@ -55,12 +57,20 @@ public class MySQLDiscordRepo : IDiscordRepo
         await connection.ExecuteAsync(sql, conferenceChannelEntity);
     }
 
-    public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, bool sendLeagueMasterGameUpdates, NotableMissSetting notableMissesSetting)
+    public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, NotableMissSetting notableMissesSetting, bool sendCurrentYearNewsOnly, bool sendEligibleNewsOnly)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var minimalLeagueChannelRecord = new MinimalLeagueChannelRecord(leagueID, guildID, channelID, sendLeagueMasterGameUpdates, notableMissesSetting, null);
-        var sql = "UPDATE tbl_discord_leaguechannel SET SendLeagueMasterGameUpdates=@SendLeagueMasterGameUpdates, SendNotableMisses=@SendNotableMisses WHERE LeagueID=@LeagueID AND GuildID=@GuildID AND ChannelID=@ChannelID";
-        await connection.ExecuteAsync(sql, minimalLeagueChannelRecord);
+        var leagueGameNewsEntity = new LeagueGameNewsSettingEntity(guildID, channelID, leagueID, sendEligibleNewsOnly, sendCurrentYearNewsOnly, notableMissesSetting);
+        var sql = @"
+            INSERT INTO tbl_discord_league_gamenewsoptions 
+            (LeagueID, GuildID, ChannelID, NotableMissSetting, SendCurrentYearGameNewsOnly, SendEligibleGameNewsOnly)
+            VALUES 
+            (@LeagueID, @GuildID, @ChannelID, @NotableMissSetting, @SendCurrentYearGameNewsOnly, @SendEligibleGameNewsOnly)
+            ON DUPLICATE KEY UPDATE 
+            NotableMissSetting = @NotableMissSetting, 
+            SendCurrentYearGameNewsOnly = @SendCurrentYearGameNewsOnly, 
+            SendEligibleGameNewsOnly = @SendEligibleGameNewsOnly;";
+        await connection.ExecuteAsync(sql, leagueGameNewsEntity);
     }
 
     public async Task SetGameNewsSetting(ulong guildID, ulong channelID, GameNewsSettings gameNewsSettings)
@@ -71,7 +81,7 @@ public class MySQLDiscordRepo : IDiscordRepo
 
         var insertOptionsSQL = @"
         REPLACE INTO tbl_discord_gamenewsoptions (
-            GuildID, ChannelID,
+            GuildID, ChannelID, EnableGameNews,
             ShowMightReleaseInYearNews,
             ShowWillReleaseInYearNews,
             ShowScoreGameNews,
@@ -79,7 +89,7 @@ public class MySQLDiscordRepo : IDiscordRepo
             ShowNewGameNews,
             ShowEditedGameNews
         ) VALUES (
-            @GuildID, @ChannelID,
+            @GuildID, @ChannelID, @EnableGameNews
             @ShowMightReleaseInYearNews,
             @ShowWillReleaseInYearNews,
             @ShowScoreGameNews,
@@ -116,6 +126,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         {
             GuildID = guildID,
             ChannelID = channelID,
+            gameNewsSettings.EnableGameNews,
             gameNewsSettings.ShowMightReleaseInYearNews,
             gameNewsSettings.ShowWillReleaseInYearNews,
             gameNewsSettings.ShowScoreGameNews,
@@ -154,7 +165,7 @@ public class MySQLDiscordRepo : IDiscordRepo
     public async Task SetBidAlertRoleId(Guid leagueID, ulong guildID, ulong channelID, ulong? bidAlertRoleID)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var minimalLeagueChannelRecord = new MinimalLeagueChannelRecord(leagueID, guildID, channelID, true, NotableMissSetting.ScoreUpdates, bidAlertRoleID);
+        var minimalLeagueChannelRecord = new MinimalLeagueChannelRecord(guildID, channelID, leagueID, _connectionString, bidAlertRoleID);
         var sql = "UPDATE tbl_discord_leaguechannel SET BidAlertRoleID=@BidAlertRoleID WHERE LeagueID=@LeagueID AND GuildID=@GuildID AND ChannelID=@ChannelID";
         await connection.ExecuteAsync(sql, minimalLeagueChannelRecord);
     }
@@ -442,10 +453,26 @@ public class MySQLDiscordRepo : IDiscordRepo
             channelID
         };
 
-        const string leagueChannelSQL = "select * from tbl_discord_leaguechannel WHERE GuildID = @guildID AND ChannelID = @channelID";
+        // Update the SQL query to cast BidAlertRoleID as UNSIGNED to ensure it is returned as ulong.
+        const string leagueChannelSQL = "SELECT GuildID, ChannelID, LeagueID, NotableMissSetting, CAST(BidAlertRoleID AS UNSIGNED) AS BidAlertRoleID FROM tbl_discord_leaguechannel WHERE GuildID = @guildID AND ChannelID = @channelID";
 
-        var leagueChannelEntity = await connection.QuerySingleOrDefaultAsync<LeagueChannelEntity>(leagueChannelSQL, queryObject);
-        return leagueChannelEntity;
+        var minimalLeagueChannelRecord = await connection.QuerySingleOrDefaultAsync<MinimalLeagueChannelRecord>(leagueChannelSQL, queryObject);
+        if (minimalLeagueChannelRecord == null)
+        {
+            Serilog.Log.Warning("No league channel found for GuildID: {GuildID}, ChannelID: {ChannelID}", guildID, channelID);
+            return null;
+        }
+
+        var activeYears = await _fantasyCriticRepo.GetActiveLeagueYears(new List<Guid> { minimalLeagueChannelRecord.LeagueID });
+        var currentYear = activeYears.FirstOrDefault(x => x.Year == _clock.GetToday().Year);
+
+        if (currentYear == null)
+        {
+            Serilog.Log.Warning("No current year found for LeagueID: {LeagueID}", minimalLeagueChannelRecord.LeagueID);
+            return null;
+        }
+
+        return new LeagueChannelEntity(minimalLeagueChannelRecord, activeYears.ToList(), currentYear);
     }
 
     private async Task<ConferenceChannelEntity?> GetConferenceChannelEntity(ulong guildID, ulong channelID)

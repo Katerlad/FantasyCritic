@@ -1,7 +1,6 @@
 using Discord;
 using Discord.Interactions;
 using DiscordDotNetUtilities.Interfaces;
-using FantasyCritic.Lib.Discord.Enums;
 using FantasyCritic.Lib.Discord.Models;
 using FantasyCritic.Lib.Discord.UrlBuilders;
 using FantasyCritic.Lib.Interfaces;
@@ -59,7 +58,7 @@ public class ViewSettingsCommand : InteractionModuleBase<SocketInteractionContex
             embedFieldBuilders.Add(new EmbedFieldBuilder
             {
                 Name = "Game News",
-                Value = GetGameNewsSettingDescription(leagueChannel.SendLeagueMasterGameUpdates, leagueChannel.NotableMissesSetting, gameNewsChannel?.GameNewsSettings, gameNewsChannel?.SkippedTags),
+                Value = GetGameNewsSettingDescription( gameNewsChannel?.GameNewsSettings, gameNewsChannel?.SkippedTags),
                 IsInline = false
             });
 
@@ -81,9 +80,10 @@ public class ViewSettingsCommand : InteractionModuleBase<SocketInteractionContex
             embedFieldBuilders));
     }
 
-    private static string GetGameNewsSettingDescription(bool sendLeagueMasterGameUpdates,
-        NotableMissSetting sendNotableMisses, GameNewsSettings? gameNewsSetting, IReadOnlyList<MasterGameTag>? skippedTags)
+    private static string GetGameNewsSettingDescription(GameNewsSettings? gameNewsSetting, IReadOnlyList<MasterGameTag>? skippedTags)
     {
+        //TODO: Fix these messages to account for the new setting structure
+        var sendLeagueMasterGameUpdates = true;
         var parts = new List<string>
         {
             sendLeagueMasterGameUpdates

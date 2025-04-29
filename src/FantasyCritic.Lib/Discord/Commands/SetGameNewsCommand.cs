@@ -96,7 +96,7 @@ public class SetGameNewsCommand : InteractionModuleBase<SocketInteractionContext
                 if (gameChannelIsLeagueChannel)
                 {
                     await _discordRepo.SetLeagueGameNewsSetting(leagueChannel!.LeagueID, leagueChannel.GuildID,
-                        leagueChannel.ChannelID, true, NotableMissSetting.ScoreUpdates);
+                        leagueChannel.ChannelID, NotableMissSetting.ScoreUpdates, gameChannelIsLeagueChannel, gameChannelIsLeagueChannel);
                 }
 
                 await FollowupAsync(embed: _discordFormatter.BuildRegularEmbedWithUserFooter(
@@ -123,7 +123,7 @@ public class SetGameNewsCommand : InteractionModuleBase<SocketInteractionContext
 
                     //Setting notable misses to false for now as they will have to respond to the dropdown menu that will send after this
                     await _discordRepo.SetLeagueGameNewsSetting(leagueChannel!.LeagueID, leagueChannel.GuildID,
-                        leagueChannel.ChannelID, true, NotableMissSetting.None);
+                        leagueChannel.ChannelID, NotableMissSetting.None, gameChannelIsLeagueChannel, gameChannelIsLeagueChannel);
                     await FollowupAsync(NotableMissesQuestion, components: notableMissesMenuComponent);
                 }
                 else if (requestedSettingEnum.Equals(RequestedGameNewsSetting.MightReleaseInYear) || requestedSettingEnum.Equals(RequestedGameNewsSetting.WillReleaseInYear))
@@ -131,7 +131,7 @@ public class SetGameNewsCommand : InteractionModuleBase<SocketInteractionContext
                     var gameSettings = requestedSettingEnum.ToNormalSetting();
                     await _discordRepo.SetGameNewsSetting(Context.Guild.Id, Context.Channel.Id, gameSettings);
                     await _discordRepo.SetSkippedGameNewsTags(Context.Guild.Id, Context.Channel.Id, tagsToSkip);
-                    await _discordRepo.SetLeagueGameNewsSetting(leagueChannel!.LeagueID, Context.Guild.Id, Context.Channel.Id, true, NotableMissSetting.ScoreUpdates);
+                    await _discordRepo.SetLeagueGameNewsSetting(leagueChannel!.LeagueID, Context.Guild.Id, Context.Channel.Id, NotableMissSetting.ScoreUpdates, gameChannelIsLeagueChannel, gameChannelIsLeagueChannel);
                     await FollowupAsync(embed: _discordFormatter.BuildRegularEmbedWithUserFooter(
                         "Game News Configuration Saved",
                         BuildGameNewsSettingsDisplayText(requestedSettingEnum, true, true, tagsToSkip),
@@ -178,11 +178,11 @@ public class SetGameNewsCommand : InteractionModuleBase<SocketInteractionContext
                     includeLeagueGames = true;
                     notableMisses = true;
                     await _discordRepo.SetLeagueGameNewsSetting(leagueChannel!.LeagueID, leagueChannel!.GuildID,
-                        leagueChannel!.ChannelID, true, NotableMissSetting.ScoreUpdates);
+                        leagueChannel!.ChannelID, NotableMissSetting.ScoreUpdates, notableMisses, notableMisses);
                     break;
                 case true when requestedSettingEnum.Equals(RequestedGameNewsSetting.Off):
                     await _discordRepo.SetLeagueGameNewsSetting(leagueChannel!.LeagueID, leagueChannel.GuildID,
-                        leagueChannel.ChannelID, false, NotableMissSetting.None);
+                        leagueChannel.ChannelID, NotableMissSetting.None, notableMisses, notableMisses);
                     break;
             }
 

@@ -115,6 +115,7 @@ public class SetLeagueCommand : InteractionModuleBase<SocketInteractionContext>
         }
         catch (Exception ex)
         {
+            
             if (ex.Message.ToLower().Contains("duplicate"))
             {
                 await FollowupAsync(embed: _discordFormatter.BuildErrorEmbedWithUserFooter(
@@ -123,6 +124,7 @@ public class SetLeagueCommand : InteractionModuleBase<SocketInteractionContext>
                     Context.User));
                 return;
             }
+            
             await FollowupAsync(embed: _discordFormatter.BuildErrorEmbedWithUserFooter(
                 "Error Saving Channel Configuration",
                 "There was an error saving this league configuration.",

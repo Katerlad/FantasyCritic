@@ -2,7 +2,7 @@
 
 public class GameNewsSettings
 {
-    
+    public bool EnableGameNews { get; set; }
     public bool ShowMightReleaseInYearNews { get; set; }
     public  bool ShowWillReleaseInYearNews { get; set; }
     public bool ShowScoreGameNews { get; set; }

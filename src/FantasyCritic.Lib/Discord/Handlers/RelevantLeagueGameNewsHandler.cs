@@ -11,14 +11,13 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
 {
     private static readonly ILogger Logger = Log.ForContext<RelevantLeagueGameNewsHandler>();
     private readonly IReadOnlyList<LeagueYear> _activeLeagueYears;
-    private bool _leagueGameNewsEnabled;
     private bool _showEligibleSlotGameNewsOnly;
     private NotableMissSetting _notableMissSetting;
     private GameNewsSettings _newsSettings;
     private DiscordChannelKey _channelKey;
     public RelevantLeagueGameNewsHandler(LeagueChannelEntity leagueChannelEntity)
     {
-        _leagueGameNewsEnabled = leagueChannelEntity.LeagueGameNewsEnabled;
+    
         _notableMissSetting = leagueChannelEntity.NotableMissSetting;
         _newsSettings = leagueChannelEntity.GameNewsSettings;
         _activeLeagueYears = leagueChannelEntity.ActiveLeagueYears;
@@ -166,11 +165,6 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         LocalDate currentDate = newsRecord.CurrentDate;
 
 
-        //The User has requested no game news be shown to their league channel
-        if (!_leagueGameNewsEnabled)
-        {
-            return false;
-        }
 
         //If all settings are turned on of course the league wants to see the new game update
         if (_newsSettings.AllGameUpdatesEnabled)

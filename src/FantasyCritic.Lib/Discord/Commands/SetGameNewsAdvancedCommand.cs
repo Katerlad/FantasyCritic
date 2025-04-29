@@ -12,6 +12,7 @@ namespace FantasyCritic.Lib.Discord.Commands
     {
         //Service Dependencies
         private readonly IDiscordRepo _discordRepo;
+
         private readonly IMasterGameRepo _masterGameRepo;
 
         //State
@@ -29,7 +30,6 @@ namespace FantasyCritic.Lib.Discord.Commands
 
         public SetGameNewsAdvancedCommand(IDiscordRepo discordRepo, IMasterGameRepo masterGameRepo)
         {
-            
             _discordRepo = discordRepo;
             _masterGameRepo = masterGameRepo;
         }
@@ -52,7 +52,6 @@ namespace FantasyCritic.Lib.Discord.Commands
                     _masterGameTags = await _masterGameRepo.GetMasterGameTags();
                 }
                 // Initialize settings for this interaction
-
                 var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(Context.Guild.Id, Context.Channel.Id);
                 var commandSettings = await _discordRepo.GetGameNewsAdvancedCommandSettings(Context.Guild.Id, Context.Channel.Id);
 
@@ -61,10 +60,16 @@ namespace FantasyCritic.Lib.Discord.Commands
                 //If channel has no command settings, create a new one and set it to recommended settings
                 if (commandSettings == null)
                 {
-                    commandSettings = new GameNewsAdvancedCommandSettings();
-                    commandSettings.Recommended = true;
-                    //await _discordRepo.SetLeagueGameNewsSetting();
-                    await _discordRepo.SetGameNewsSetting(Context.Guild.Id, Context.Channel.Id, commandSettings.ToGameNewsSettings());
+                    if (leagueChannel == null)
+                    {
+                        commandSettings = new GameNewsAdvancedCommandSettings();
+                        commandSettings.Recommended = true;
+                    }
+                    else
+                    {
+                        commandSettings = new GameNewsAdvancedCommandSettings();
+                        commandSettings.SetLeagueRecommendedSettings();
+                    }
                 }
 
                 //Set Settings Dictionary
@@ -77,7 +82,6 @@ namespace FantasyCritic.Lib.Discord.Commands
                         await FollowupAsync("Something went wrong, please try resending command", ephemeral: true);
                     }
                 }
-                
 
                 //Start Interaction Expiration timer to Clean up Dictionary after set time.
                 _ = Task.Run(async () =>
@@ -89,12 +93,11 @@ namespace FantasyCritic.Lib.Discord.Commands
                         if (!success) Serilog.Log.Error("Something went wrong removing Setting entry from dictionary after message expiration");
                     }
                 });
-                   
 
                 if (isLeagueChannel)
                 {
                     // If game news is currently off, show only the enable option
-                    if (commandSettings.EnableGameNews == false || commandSettings.EnableGameNews == null)
+                    if (commandSettings.EnableGameNews == false)
                     {
                         await SendDisabledGameNewsMessage(commandSettings);
                     }
@@ -105,7 +108,7 @@ namespace FantasyCritic.Lib.Discord.Commands
                 }
                 else
                 {
-                    if (commandSettings.EnableGameNews == false || commandSettings.EnableGameNews == null)
+                    if (commandSettings.EnableGameNews == false)
                     {
                         await SendDisabledGameNewsMessage(commandSettings);
                     }
@@ -124,13 +127,13 @@ namespace FantasyCritic.Lib.Discord.Commands
         }
 
         #region SnapShot Messages
+
         private async Task SendGameNewsSnapShotMessage(GameNewsAdvancedCommandSettings settings)
         {
             var guildId = Context.Guild.Id;
             var channelId = Context.Channel.Id;
 
             var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(guildId, channelId);
-
 
             if (leagueChannel != null)
             {
@@ -141,16 +144,19 @@ namespace FantasyCritic.Lib.Discord.Commands
                 await SendGameNewsOnlySnapShot(settings);
             }
         }
+
         private async Task SendLeagueGameNewsSnapshot(GameNewsAdvancedCommandSettings settings)
         {
             var message = await FollowupAsync(settings.ToDiscordMessage(), components: GetLeagueSnapshotComponent());
             _channelSnapshotLookup[Context.Channel.Id] = message.Id;
         }
+
         private async Task SendGameNewsOnlySnapShot(GameNewsAdvancedCommandSettings settings)
         {
-           var message = await FollowupAsync(settings.ToDiscordMessage(), components: GetGameNewsOnlySnapshotComponent());
+            var message = await FollowupAsync(settings.ToDiscordMessage(), components: GetGameNewsOnlySnapshotComponent());
             _channelSnapshotLookup[Context.Channel.Id] = message.Id;
         }
+
         private async Task UpdateSnapShotMessage(GameNewsAdvancedCommandSettings settings)
         {
             _channelSnapshotLookup.TryGetValue(Context.Channel.Id, out ulong snapshotMessageID);
@@ -199,9 +205,10 @@ namespace FantasyCritic.Lib.Discord.Commands
                 .AddRow(new ActionRowBuilder().WithButton(GetChangeSkippedTagsSettingsButton()))
                 .Build();
         }
-        #endregion
 
-        #region Setting Category Messages 
+        #endregion SnapShot Components
+
+        #region Setting Category Messages
 
         private async Task SendDisabledGameNewsMessage(GameNewsAdvancedCommandSettings commandSettings)
         {
@@ -238,6 +245,7 @@ namespace FantasyCritic.Lib.Discord.Commands
         {
             var leagueGameNewsSettingsMessage = new ComponentBuilder()
                 .AddRow(new ActionRowBuilder().WithButton(GetEnableEligibleLeagueGameNewsOnlyButton(settings.ShowEligibleGameNewsOnly ?? false)))
+                .AddRow(new ActionRowBuilder().WithButton(GetCurrentYearGameNewsOnlyButton(settings.ShowCurrentYearGameNewsOnly ?? false)))
                 .AddRow(new ActionRowBuilder().WithSelectMenu(GetNotableMissSettingSelection(settings.NotableMissSetting ?? NotableMissSetting.None)))
                 .Build();
             await FollowupAsync("**Set League Game News Settings** \n", components: leagueGameNewsSettingsMessage, ephemeral: true);
@@ -255,7 +263,6 @@ namespace FantasyCritic.Lib.Discord.Commands
 
         #region Handle Interactions
 
-
         [ComponentInteraction("button_*")]
         public async Task HandleButtonPresses(string button)
         {
@@ -271,7 +278,6 @@ namespace FantasyCritic.Lib.Discord.Commands
 
             //Get snapshot message ID for any buttons that will update snapshot
             _channelSnapshotLookup.TryGetValue(Context.Channel.Id, out var snapshotMessageID);
-            
 
             // Toggle the specified setting
             switch (button)
@@ -304,18 +310,26 @@ namespace FantasyCritic.Lib.Discord.Commands
                     await Context.Channel.DeleteMessageAsync(snapshotMessageID);
                     await FollowupAsync("Game News has been disabled", ephemeral: true);
                     break;
+
                 case "set_recommended_settings":
                     settings.Recommended = true;
                     await UpdateGameNewsSettings(settings);
                     await UpdateSnapShotMessage(settings);
                     await FollowupAsync("Recommended settings have been set", ephemeral: true);
                     break;
+
                 case "eligible_game_news":
                     settings.ShowEligibleGameNewsOnly = !settings.ShowEligibleGameNewsOnly;
                     await UpdateGameNewsSettings(settings);
                     await UpdateButtonState("eligible_game_news", settings.ShowEligibleGameNewsOnly ?? false);
                     await UpdateSnapShotMessage(settings);
                     var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(Context.Guild.Id, Context.Channel.Id);
+                    break;
+                case "current_year_game_news":
+                    settings.ShowCurrentYearGameNewsOnly = !settings.ShowCurrentYearGameNewsOnly;
+                    await UpdateGameNewsSettings(settings);
+                    await UpdateButtonState("current_year_game_news", settings.ShowCurrentYearGameNewsOnly ?? false);
+                    await UpdateSnapShotMessage(settings);
                     break;
 
                 case "might_release_in_year":
@@ -368,8 +382,6 @@ namespace FantasyCritic.Lib.Discord.Commands
             // Defer the interaction response to extend the response window
             await DeferAsync();
 
-            
-
             // Cast the interaction to SocketMessageComponent
             var component = Context.Interaction as SocketMessageComponent;
 
@@ -393,7 +405,10 @@ namespace FantasyCritic.Lib.Discord.Commands
             {
                 case "notable_miss":
                     settings.NotableMissSetting = NotableMissSetting.TryFromValue(selectedValues.FirstOrDefault() ?? "");
+                    await UpdateGameNewsSettings(settings);
+                    await UpdateSnapShotMessage(settings);
                     break;
+
                 case "skipped_tags":
                     var selectedTags = _masterGameTags?
                         .Where(tag => selectedValues.Contains(tag.Name))
@@ -414,6 +429,7 @@ namespace FantasyCritic.Lib.Discord.Commands
             // Example: Respond with the selected values
             await FollowupAsync($"You selected: {string.Join(", ", selectedValues)}", ephemeral: true);
         }
+
         private async Task UpdateButtonState(string buttonId, bool newState)
         {
             // Retrieve the original response message
@@ -461,6 +477,7 @@ namespace FantasyCritic.Lib.Discord.Commands
         #endregion Handle Interactions
 
         #region RepoHelpers
+
         private async Task CreateNewGameNewsChannel(GameNewsAdvancedCommandSettings settings)
         {
             var guildID = Context.Guild.Id;
@@ -468,10 +485,10 @@ namespace FantasyCritic.Lib.Discord.Commands
 
             var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(guildID, channelID);
 
-            if(leagueChannel != null)
+            if (leagueChannel != null)
             {
-                await _discordRepo.SetLeagueGameNewsSetting(leagueChannel.LeagueID, guildID, channelID, true, NotableMissSetting.None);
                 await _discordRepo.SetGameNewsSetting(guildID, channelID, settings.ToGameNewsSettings());
+                await _discordRepo.SetLeagueGameNewsSetting(leagueChannel.LeagueID, guildID, channelID, settings.NotableMissSetting ?? NotableMissSetting.None, settings.ShowCurrentYearGameNewsOnly ?? false, settings.ShowEligibleGameNewsOnly ?? false);
             }
             else
             {
@@ -484,7 +501,6 @@ namespace FantasyCritic.Lib.Discord.Commands
             var guildID = Context.Guild.Id;
             var channelId = Context.Channel.Id;
             await _discordRepo.DeleteGameNewsChannel(guildID, channelId);
-
         }
 
         private async Task UpdateGameNewsSettings(GameNewsAdvancedCommandSettings settings)
@@ -493,7 +509,15 @@ namespace FantasyCritic.Lib.Discord.Commands
 
             if (leagueChannel != null)
             {
-                //await _discordRepo.SetLeagueGameNewsSetting(leagueChannel.LeagueID, leagueChannel.GuildID, leagueChannel.ChannelID);
+                
+                await _discordRepo.SetLeagueGameNewsSetting(
+                    leagueChannel.LeagueID,
+                    leagueChannel.GuildID,
+                    leagueChannel.ChannelID,
+                    settings.NotableMissSetting ?? NotableMissSetting.None,
+                    settings.ShowCurrentYearGameNewsOnly ?? false,
+                    settings.ShowEligibleGameNewsOnly ?? false
+                    );
             }
 
             await _discordRepo.SetGameNewsSetting(Context.Guild.Id, Context.Channel.Id, settings.ToGameNewsSettings());
@@ -502,20 +526,21 @@ namespace FantasyCritic.Lib.Discord.Commands
         #endregion RepoHelpers
 
         #region Button Builders
+
         private ButtonBuilder GetChangeLeagueNewsSettingsButton()
         {
-             return new ButtonBuilder()
-                .WithCustomId("button_change_league_news_settings")
-                .WithLabel("Change League News Settings")
-                .WithStyle(ButtonStyle.Primary);
+            return new ButtonBuilder()
+               .WithCustomId("button_change_league_news_settings")
+               .WithLabel("Change League News Settings")
+               .WithStyle(ButtonStyle.Primary);
         }
 
         private ButtonBuilder GetChangeGameReleaseSettingsButton()
         {
-             return new ButtonBuilder()
-                .WithCustomId("button_change_game_release_settings")
-                .WithLabel("Change Game Release Settings")
-                .WithStyle(ButtonStyle.Primary);
+            return new ButtonBuilder()
+               .WithCustomId("button_change_game_release_settings")
+               .WithLabel("Change Game Release Settings")
+               .WithStyle(ButtonStyle.Primary);
         }
 
         private ButtonBuilder GetChangeGameUpdateSettingsButton()
@@ -557,11 +582,21 @@ namespace FantasyCritic.Lib.Discord.Commands
                 .WithLabel("Set Recommended Settings")
                 .WithStyle(ButtonStyle.Success);
         }
+
         private ButtonBuilder GetEnableEligibleLeagueGameNewsOnlyButton(bool initialSetting)
         {
             return new ButtonBuilder()
                 .WithCustomId("button_eligible_game_news")
                 .WithLabel("Enable Eligible League Game News Only")
+                .WithEmote(new Emoji(initialSetting ? "✅" : "❌"))
+                .WithStyle(ButtonStyle.Primary);
+        }
+
+        private ButtonBuilder GetCurrentYearGameNewsOnlyButton(bool initialSetting)
+        {
+            return new ButtonBuilder()
+                .WithCustomId("button_current_year_game_news")
+                .WithLabel("Enable Current Year Game News Only")
                 .WithEmote(new Emoji(initialSetting ? "✅" : "❌"))
                 .WithStyle(ButtonStyle.Primary);
         }
@@ -619,6 +654,7 @@ namespace FantasyCritic.Lib.Discord.Commands
                 .WithEmote(new Emoji(initialSetting ? "✅" : "❌"))
                 .WithStyle(ButtonStyle.Primary);
         }
+
         #endregion Button Builders
 
         #region Select Menu Builders
@@ -630,9 +666,9 @@ namespace FantasyCritic.Lib.Discord.Commands
                 .WithPlaceholder("Notable Miss Options")
                 .WithMinValues(1)
                 .WithMaxValues(1)
-                .AddOption("NotableMissSetting.InitialScore", "InitialScore", isDefault: defaultSetting == NotableMissSetting.InitialScore)
-                .AddOption("NotableMissSetting.ScoreUpdates", "ScoreUpdates", isDefault: defaultSetting == NotableMissSetting.ScoreUpdates)
-                .AddOption("NotableMissSetting.None", "None", isDefault: defaultSetting == NotableMissSetting.None);
+                .AddOption("NotableMissSetting.InitialScore", "InitialScore",description: NotableMissSetting.InitialScore.Description, isDefault: defaultSetting == NotableMissSetting.InitialScore)
+                .AddOption("NotableMissSetting.ScoreUpdates", "ScoreUpdates",description: NotableMissSetting.ScoreUpdates.Description, isDefault: defaultSetting == NotableMissSetting.ScoreUpdates)
+                .AddOption("NotableMissSetting.None", "None",description: NotableMissSetting.None.Description, isDefault: defaultSetting == NotableMissSetting.None);
         }
 
         private SelectMenuBuilder GetSkippedTagsSelection(List<MasterGameTag>? skippedTags)
@@ -659,6 +695,7 @@ namespace FantasyCritic.Lib.Discord.Commands
             }
             return selectMenu;
         }
+
         #endregion Select Menu Builders
     }
 }
