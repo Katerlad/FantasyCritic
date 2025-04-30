@@ -424,10 +424,12 @@ public class DiscordPushService
         var discordRepo = scope.ServiceProvider.GetRequiredService<IDiscordRepo>();
 
         var leagueChannels = await discordRepo.GetLeagueChannels(scoreChanges.LeagueYear.League.LeagueID);
-        await SendLeagueYearScoreUpdateMessage(scoreChanges, leagueChannels);
+        var leagueChannelEntities = leagueChannels.Select(channel => new LeagueChannelEntity(channel)).ToList();
+
+        await SendLeagueYearScoreUpdateMessage(scoreChanges, leagueChannelEntities);
     }
 
-    public async Task SendLeagueYearScoreUpdateMessage(LeagueYearScoreChanges scoreChanges, IEnumerable<MinimalLeagueChannelRecord> leagueChannels)
+    public async Task SendLeagueYearScoreUpdateMessage(LeagueYearScoreChanges scoreChanges, IEnumerable<LeagueChannelEntity> leagueChannels)
     {
         bool shouldRun = await StartBot();
         if (!shouldRun)
@@ -1015,7 +1017,8 @@ public class DiscordPushService
     private async Task<IReadOnlyList<SocketTextChannel>> GetChannelsForLeague(Guid leagueID, IDiscordRepo discordRepo)
     {
         var leagueChannels = await discordRepo.GetLeagueChannels(leagueID);
-        return GetSocketTextChannels(leagueChannels);
+        var leagueChannelEntities = leagueChannels.Select(channel => new LeagueChannelEntity(channel)).ToList();
+        return GetSocketTextChannels(leagueChannelEntities);
     }
 
     private async Task<IReadOnlyList<SocketTextChannel>> GetChannelsForConference(Guid conferenceID, IDiscordRepo discordRepo)
@@ -1188,42 +1191,36 @@ public class DiscordPushService
 
     private static async Task<IReadOnlyList<IGameNewsReciever>> GetAllGameNewsReceivers(IDiscordRepo discordRepo, IFantasyCriticRepo fantasyCriticRepo)
     {
-        var minimalLeagueChannelsTask = discordRepo.GetAllMinimalLeagueChannels();
+        var leagueChannelTask = discordRepo.GetAllLeagueChannels();
         var gameNewsChannelsTask = discordRepo.GetAllGameNewsChannels();
-        await Task.WhenAll(minimalLeagueChannelsTask, gameNewsChannelsTask);
+        await Task.WhenAll(leagueChannelTask, gameNewsChannelsTask);
 
-        var minimalLeagueChannels = await minimalLeagueChannelsTask;
+        var leagueChannels = await leagueChannelTask;
         var gameNewsChannels = await gameNewsChannelsTask;
 
-        var leagueIDs = minimalLeagueChannels.Select(x => x.LeagueID).Distinct().ToList();
-        var leagueYears = await fantasyCriticRepo.GetActiveLeagueYears(leagueIDs);
-        var leagueYearLookup = leagueYears.ToLookup(x => x.League.LeagueID);
-
-        var minimalLeagueChannelDictionary = minimalLeagueChannels.ToDictionary(x => x.ChannelKey);
+        var leagueChannelDictionary = leagueChannels.ToDictionary(x => x.ChannelKey);
         var gameNewsChannelDictionary = gameNewsChannels.ToDictionary(x => x.ChannelKey);
 
-        var channelKeys = minimalLeagueChannels.Select(x => x.ChannelKey)
+        var channelKeys = leagueChannels.Select(x => x.ChannelKey)
             .Concat(gameNewsChannels.Select(x => x.ChannelKey)).Distinct().ToList();
 
         List<IGameNewsReciever> gameNewsReceiverChannels = new List<IGameNewsReciever>();
         foreach (var channelKey in channelKeys)
         {
-            var minimalLeagueChannel = minimalLeagueChannelDictionary.GetValueOrDefault(channelKey);
-            var gameNewsChannel = gameNewsChannelDictionary.GetValueOrDefault(channelKey);
+            var leagueChannelRecord = leagueChannelDictionary.GetValueOrDefault(channelKey);
+            var gameNewsChannelRecord = gameNewsChannelDictionary.GetValueOrDefault(channelKey);
 
 
             // Check is league channel
-            if (minimalLeagueChannel is not null)
+            if (leagueChannelRecord is not null)
             {
-                //Create a league channel entity using minimal league and active league years
-                var activeLeagueYears = leagueYearLookup[minimalLeagueChannel.LeagueID].ToList();
-                var leagueChannelEntity = new LeagueChannelEntity(minimalLeagueChannel, activeLeagueYears);
+                var leagueChannelEntity = new LeagueChannelEntity(leagueChannelRecord);
                 gameNewsReceiverChannels.Add(leagueChannelEntity);
             }
             //Check if game news only channel
-            else if (gameNewsChannel is not null)
+            else if (gameNewsChannelRecord is not null)
             {
-                var gameNewsOnlyChannelEntity = new GameNewsOnlyChannelEntity(gameNewsChannel);
+                var gameNewsOnlyChannelEntity = new GameNewsOnlyChannelEntity(gameNewsChannelRecord);
                 gameNewsReceiverChannels.Add(gameNewsOnlyChannelEntity);
             }
 

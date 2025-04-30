@@ -58,7 +58,7 @@ public class BidResultsCommand : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var leagueYear = leagueChannel.CurrentLeagueYear;
+        var leagueYear = leagueChannel.CurrentYear;
 
         var leagueActionSets = await _fantasyCriticService.GetLeagueActionProcessingSets(leagueYear);
         var normalActionSets = leagueActionSets.Where(x => !x.ProcessName.Contains("Special Auction")).ToList();

@@ -36,7 +36,4 @@ public class GameNewsSettings
         && SkippedTags.Count == 0;
     }
 
-    
-
-
 }

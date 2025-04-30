@@ -11,18 +11,18 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
 {
     private static readonly ILogger Logger = Log.ForContext<RelevantLeagueGameNewsHandler>();
     private readonly IReadOnlyList<LeagueYear> _activeLeagueYears;
-    private bool _showEligibleSlotGameNewsOnly;
+    private bool _showEligibleGameNewsOnly;
     private NotableMissSetting _notableMissSetting;
     private GameNewsSettings _newsSettings;
     private DiscordChannelKey _channelKey;
     public RelevantLeagueGameNewsHandler(LeagueChannelEntity leagueChannelEntity)
     {
     
-        _notableMissSetting = leagueChannelEntity.NotableMissSetting;
+        _notableMissSetting = leagueChannelEntity.LeagueGameNewsSettings.NotableMissSetting;
         _newsSettings = leagueChannelEntity.GameNewsSettings;
         _activeLeagueYears = leagueChannelEntity.ActiveLeagueYears;
         _channelKey = leagueChannelEntity.ChannelKey;
-        _showEligibleSlotGameNewsOnly = leagueChannelEntity.SendEligibleSlotGameNewsOnly;
+        _showEligibleGameNewsOnly = leagueChannelEntity.LeagueGameNewsSettings.ShowEligibleGameNewsOnly;
     }
 
     public bool IsNewGameNewsRelevant(NewGameNewsRecord newsRecord)
@@ -192,7 +192,7 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
             }
 
             //If the game is not eligible in the league year, and user requested to not show ilegible games, skip it
-            if (!eligibleInYear && !_showEligibleSlotGameNewsOnly)
+            if (!eligibleInYear && !_showEligibleGameNewsOnly)
             {
                 return false;
             }

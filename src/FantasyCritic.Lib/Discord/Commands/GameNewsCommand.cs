@@ -97,7 +97,7 @@ public class GameNewsCommand : InteractionModuleBase<SocketInteractionContext>
                 return;
             }
 
-            var leagueYear = leagueChannel.CurrentLeagueYear;
+            var leagueYear = leagueChannel.CurrentYear;
             var leagueYearPublisherPairs =
                 leagueYear.Publishers.Select(publisher => new LeagueYearPublisherPair(leagueYear, publisher));
 

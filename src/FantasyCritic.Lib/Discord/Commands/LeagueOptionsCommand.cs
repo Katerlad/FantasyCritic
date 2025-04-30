@@ -54,7 +54,7 @@ public class LeagueOptionsCommand : InteractionModuleBase<SocketInteractionConte
             return;
         }
 
-        var leagueYearOptions = leagueChannel.CurrentLeagueYear.Options;
+        var leagueYearOptions = leagueChannel.CurrentYear.Options;
 
         var picksCounterPicksMessage = $"Total Standard Games: **{leagueYearOptions.StandardGames}**\n";
         picksCounterPicksMessage += $"Games to Draft: **{leagueYearOptions.GamesToDraft}**\n";
@@ -81,9 +81,9 @@ public class LeagueOptionsCommand : InteractionModuleBase<SocketInteractionConte
         systemBasedOptionsMessage += $"Game Release Rule: **{leagueYearOptions.ReleaseSystem.ReadableName}**\n";
         systemBasedOptionsMessage += $"Scoring Rule: **{leagueYearOptions.ScoringSystem.GetReadableString()}**\n";
 
-        var leagueVisibilityMessage = $"Public League: **{YesOrNo(leagueChannel.CurrentLeagueYear.League.PublicLeague)}**\n";
-        leagueVisibilityMessage += $"Test League: **{YesOrNo(leagueChannel.CurrentLeagueYear.League.TestLeague)}**\n";
-        leagueVisibilityMessage += $"Custom Rules League: **{YesOrNo(leagueChannel.CurrentLeagueYear.League.CustomRulesLeague)}**\n";
+        var leagueVisibilityMessage = $"Public League: **{YesOrNo(leagueChannel.CurrentYear.League.PublicLeague)}**\n";
+        leagueVisibilityMessage += $"Test League: **{YesOrNo(leagueChannel.CurrentYear.League.TestLeague)}**\n";
+        leagueVisibilityMessage += $"Custom Rules League: **{YesOrNo(leagueChannel.CurrentYear.League.CustomRulesLeague)}**\n";
 
         var embedFieldBuilders = new List<EmbedFieldBuilder>
         {
@@ -94,12 +94,12 @@ public class LeagueOptionsCommand : InteractionModuleBase<SocketInteractionConte
             BuildEmbedFieldBuilder("League Visibility", leagueVisibilityMessage)
         };
 
-        var leagueUrl = new LeagueUrlBuilder(_baseAddress, leagueChannel.CurrentLeagueYear.League.LeagueID,
-            leagueChannel.CurrentLeagueYear.Year)
+        var leagueUrl = new LeagueUrlBuilder(_baseAddress, leagueChannel.CurrentYear.League.LeagueID,
+            leagueChannel.CurrentYear.Year)
             .BuildUrl();
 
         await FollowupAsync(embed: _discordFormatter.BuildRegularEmbedWithUserFooter(
-            $"League Options for {leagueChannel.CurrentLeagueYear.Year}",
+            $"League Options for {leagueChannel.CurrentYear.Year}",
             "",
             Context.User,
             embedFieldBuilders,

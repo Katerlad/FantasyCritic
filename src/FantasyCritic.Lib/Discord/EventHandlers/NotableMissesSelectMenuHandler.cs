@@ -40,7 +40,7 @@ public class NotableMissesSelectMenuHandler : InteractionModuleBase<SocketIntera
                 return;
             }
 
-            await _discordRepo.SetLeagueGameNewsSetting(leagueGameNewsChannel.CurrentLeagueYear.League.LeagueID,
+            await _discordRepo.SetLeagueGameNewsSetting(leagueGameNewsChannel.CurrentYear.League.LeagueID,
                 leagueGameNewsChannel.GuildID,
                 leagueGameNewsChannel.ChannelID,
                 optionToSet, valueToSet, valueToSet);

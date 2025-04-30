@@ -26,7 +26,7 @@ namespace FantasyCritic.Lib.Discord.Commands
         /// <summary>
         /// First - channelId, second - settingsCache
         /// </summary>
-        private static readonly ConcurrentDictionary<ulong, GameNewsAdvancedCommandSettings> _settingsDictionary = new();
+        private static readonly ConcurrentDictionary<ulong, CompleteGameNewsSettings> _settingsDictionary = new();
 
         public SetGameNewsAdvancedCommand(IDiscordRepo discordRepo, IMasterGameRepo masterGameRepo)
         {
@@ -62,12 +62,12 @@ namespace FantasyCritic.Lib.Discord.Commands
                 {
                     if (leagueChannel == null)
                     {
-                        commandSettings = new GameNewsAdvancedCommandSettings();
+                        commandSettings = new CompleteGameNewsSettings();
                         commandSettings.Recommended = true;
                     }
                     else
                     {
-                        commandSettings = new GameNewsAdvancedCommandSettings();
+                        commandSettings = new CompleteGameNewsSettings();
                         commandSettings.SetLeagueRecommendedSettings();
                     }
                 }
@@ -128,7 +128,7 @@ namespace FantasyCritic.Lib.Discord.Commands
 
         #region SnapShot Messages
 
-        private async Task SendGameNewsSnapShotMessage(GameNewsAdvancedCommandSettings settings)
+        private async Task SendGameNewsSnapShotMessage(CompleteGameNewsSettings settings)
         {
             var guildId = Context.Guild.Id;
             var channelId = Context.Channel.Id;
@@ -145,19 +145,19 @@ namespace FantasyCritic.Lib.Discord.Commands
             }
         }
 
-        private async Task SendLeagueGameNewsSnapshot(GameNewsAdvancedCommandSettings settings)
+        private async Task SendLeagueGameNewsSnapshot(CompleteGameNewsSettings settings)
         {
             var message = await FollowupAsync(settings.ToDiscordMessage(), components: GetLeagueSnapshotComponent());
             _channelSnapshotLookup[Context.Channel.Id] = message.Id;
         }
 
-        private async Task SendGameNewsOnlySnapShot(GameNewsAdvancedCommandSettings settings)
+        private async Task SendGameNewsOnlySnapShot(CompleteGameNewsSettings settings)
         {
             var message = await FollowupAsync(settings.ToDiscordMessage(), components: GetGameNewsOnlySnapshotComponent());
             _channelSnapshotLookup[Context.Channel.Id] = message.Id;
         }
 
-        private async Task UpdateSnapShotMessage(GameNewsAdvancedCommandSettings settings)
+        private async Task UpdateSnapShotMessage(CompleteGameNewsSettings settings)
         {
             _channelSnapshotLookup.TryGetValue(Context.Channel.Id, out ulong snapshotMessageID);
             if (snapshotMessageID == default)
@@ -210,7 +210,7 @@ namespace FantasyCritic.Lib.Discord.Commands
 
         #region Setting Category Messages
 
-        private async Task SendDisabledGameNewsMessage(GameNewsAdvancedCommandSettings commandSettings)
+        private async Task SendDisabledGameNewsMessage(CompleteGameNewsSettings commandSettings)
         {
             var enableGameNewsMessage = new ComponentBuilder()
                 .WithButton(GetEnableGameNewsButton())
@@ -219,7 +219,7 @@ namespace FantasyCritic.Lib.Discord.Commands
             await FollowupAsync("Game News is currently off for this channel, Do you want to turn it on?:", components: enableGameNewsMessage, ephemeral: true);
         }
 
-        private async Task SendGameNewsReleaseSettingsMessage(GameNewsAdvancedCommandSettings settings)
+        private async Task SendGameNewsReleaseSettingsMessage(CompleteGameNewsSettings settings)
         {
             var gameReleaseSettingsMessage = new ComponentBuilder()
                 .AddRow(new ActionRowBuilder().WithButton(GetNewGameNewsButton(settings.ShowNewGameNews)))
@@ -231,7 +231,7 @@ namespace FantasyCritic.Lib.Discord.Commands
             await FollowupAsync("**Set Game News Release Settings** \n", components: gameReleaseSettingsMessage, ephemeral: true);
         }
 
-        private async Task SendGameNewsUpdateSettingsMessage(GameNewsAdvancedCommandSettings settings)
+        private async Task SendGameNewsUpdateSettingsMessage(CompleteGameNewsSettings settings)
         {
             var gameNewsUpdateSettingsMessage = new ComponentBuilder()
                 .AddRow(new ActionRowBuilder().WithButton(GetEditedGameNewsButton(settings.ShowEditedGameNews)))
@@ -241,7 +241,7 @@ namespace FantasyCritic.Lib.Discord.Commands
             await FollowupAsync("**Set Game News Update Settings** \n", components: gameNewsUpdateSettingsMessage, ephemeral: true);
         }
 
-        private async Task SendLeagueGameNewsSettingsMessage(GameNewsAdvancedCommandSettings settings)
+        private async Task SendLeagueGameNewsSettingsMessage(CompleteGameNewsSettings settings)
         {
             var leagueGameNewsSettingsMessage = new ComponentBuilder()
                 .AddRow(new ActionRowBuilder().WithButton(GetEnableEligibleLeagueGameNewsOnlyButton(settings.ShowEligibleGameNewsOnly ?? false)))
@@ -251,7 +251,7 @@ namespace FantasyCritic.Lib.Discord.Commands
             await FollowupAsync("**Set League Game News Settings** \n", components: leagueGameNewsSettingsMessage, ephemeral: true);
         }
 
-        private async Task SendGameNewsSkipTagsSettingsMessage(GameNewsAdvancedCommandSettings settings)
+        private async Task SendGameNewsSkipTagsSettingsMessage(CompleteGameNewsSettings settings)
         {
             var gameNewsSkipTagsSettingsMessage = new ComponentBuilder()
                 .AddRow(new ActionRowBuilder().WithSelectMenu(GetSkippedTagsSelection(settings.SkippedTags)))
@@ -478,7 +478,7 @@ namespace FantasyCritic.Lib.Discord.Commands
 
         #region RepoHelpers
 
-        private async Task CreateNewGameNewsChannel(GameNewsAdvancedCommandSettings settings)
+        private async Task CreateNewGameNewsChannel(CompleteGameNewsSettings settings)
         {
             var guildID = Context.Guild.Id;
             var channelID = Context.Channel.Id;
@@ -503,7 +503,7 @@ namespace FantasyCritic.Lib.Discord.Commands
             await _discordRepo.DeleteGameNewsChannel(guildID, channelId);
         }
 
-        private async Task UpdateGameNewsSettings(GameNewsAdvancedCommandSettings settings)
+        private async Task UpdateGameNewsSettings(CompleteGameNewsSettings settings)
         {
             var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(Context.Guild.Id, Context.Channel.Id);
 

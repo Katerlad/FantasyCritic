@@ -52,11 +52,11 @@ public class LinkToLeagueCommand : InteractionModuleBase<SocketInteractionContex
             return;
         }
 
-        var leagueUrlBuilder = new LeagueUrlBuilder(_baseAddress, leagueChannel.CurrentLeagueYear.League.LeagueID, leagueChannel.CurrentLeagueYear.Year);
+        var leagueUrlBuilder = new LeagueUrlBuilder(_baseAddress, leagueChannel.CurrentYear.League.LeagueID, leagueChannel.CurrentYear.Year);
         var leagueUrl = leagueUrlBuilder.BuildUrl();
 
         await FollowupAsync(embed: _discordFormatter.BuildRegularEmbedWithUserFooter(
-            $"Click here to visit the site for the league {leagueChannel.CurrentLeagueYear.League.LeagueName} ({leagueChannel.CurrentLeagueYear.Year})",
+            $"Click here to visit the site for the league {leagueChannel.CurrentYear.League.LeagueName} ({leagueChannel.CurrentYear.Year})",
             "",
             Context.User,
             url: leagueUrl));

@@ -3,7 +3,7 @@ using System.Text;
 
 
 namespace FantasyCritic.Lib.Discord.Models;
-public class GameNewsAdvancedCommandSettings
+public class CompleteGameNewsSettings
 {
     public bool EnableGameNews { get; set; }
     public bool? ShowEligibleGameNewsOnly { get; set; } = null;

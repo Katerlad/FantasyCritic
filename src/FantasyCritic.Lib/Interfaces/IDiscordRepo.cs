@@ -1,6 +1,6 @@
+
 using FantasyCritic.Lib.Discord.Enums;
 using FantasyCritic.Lib.Discord.Models;
-
 namespace FantasyCritic.Lib.Interfaces;
 public interface IDiscordRepo
 {
@@ -13,14 +13,15 @@ public interface IDiscordRepo
     Task<bool> DeleteLeagueChannel(ulong guildID, ulong channelID);
     Task<bool> DeleteConferenceChannel(ulong guildID, ulong channelID);
     Task<bool> DeleteGameNewsChannel(ulong guildID, ulong channelID);
+    Task<IReadOnlyList<LeagueChannelRecord>> GetAllLeagueChannels();
     Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetAllMinimalLeagueChannels();
     Task<IReadOnlyList<GameNewsOnlyChannelRecord>> GetAllGameNewsChannels();
-    Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetLeagueChannels(Guid leagueID);
+    Task<IReadOnlyList<LeagueChannelRecord>> GetLeagueChannels(Guid leagueID);
     Task<IReadOnlyList<MinimalConferenceChannel>> GetConferenceChannels(Guid conferenceID);
     Task<MinimalLeagueChannelRecord?> GetMinimalLeagueChannel(ulong guildID, ulong channelID);
     Task<LeagueChannelRecord?> GetLeagueChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null);
     Task<ConferenceChannel?> GetConferenceChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null);
     Task<GameNewsOnlyChannelRecord?> GetGameNewsChannel(ulong guildID, ulong channelID);
     Task RemoveAllLeagueChannelsForLeague(Guid leagueID);
-    Task<GameNewsAdvancedCommandSettings?> GetGameNewsAdvancedCommandSettings(ulong guildID, ulong channelID);
+    Task<CompleteGameNewsSettings?> GetGameNewsAdvancedCommandSettings(ulong guildID, ulong channelID);
 }

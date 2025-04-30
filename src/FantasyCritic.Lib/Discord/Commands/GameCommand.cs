@@ -66,7 +66,7 @@ public class GameCommand : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var matchingGames = await _gameSearchingService.SearchGamesWithLeaguePriority(termToSearch, dateToCheck.Year, 3, leagueChannel?.CurrentLeagueYear);
+        var matchingGames = await _gameSearchingService.SearchGamesWithLeaguePriority(termToSearch, dateToCheck.Year, 3, leagueChannel?.CurrentYear);
         if (!matchingGames.Any())
         {
             await FollowupAsync(embed: _discordFormatter.BuildErrorEmbedWithUserFooter(
@@ -79,8 +79,8 @@ public class GameCommand : InteractionModuleBase<SocketInteractionContext>
         var gamesToDisplay = matchingGames
             .Select(game => new MatchedGameDisplay(game)
             {
-                PublisherWhoPicked = leagueChannel != null ? FindPublisherWithGame(leagueChannel.CurrentLeagueYear, game, false) : null,
-                PublisherWhoCounterPicked = leagueChannel != null ? FindPublisherWithGame(leagueChannel.CurrentLeagueYear, game, true) : null
+                PublisherWhoPicked = leagueChannel != null ? FindPublisherWithGame(leagueChannel.CurrentYear, game, false) : null,
+                PublisherWhoCounterPicked = leagueChannel != null ? FindPublisherWithGame(leagueChannel.CurrentYear, game, true) : null
             }).ToList();
 
         var gameEmbeds = gamesToDisplay
@@ -90,7 +90,7 @@ public class GameCommand : InteractionModuleBase<SocketInteractionContext>
                 return new EmbedFieldBuilder
                 {
                     Name = masterGameYear.MasterGame.GameName,
-                    Value = BuildGameDisplayText(matchedGameDisplay, leagueChannel?.CurrentLeagueYear, dateToCheck),
+                    Value = BuildGameDisplayText(matchedGameDisplay, leagueChannel?.CurrentYear, dateToCheck),
                     IsInline = false
                 };
             }).ToList();

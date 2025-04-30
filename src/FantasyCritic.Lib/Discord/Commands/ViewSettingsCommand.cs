@@ -39,9 +39,9 @@ public class ViewSettingsCommand : InteractionModuleBase<SocketInteractionContex
 
         var embedFieldBuilders = new List<EmbedFieldBuilder>();
 
-        var leagueDisplay = leagueChannel?.CurrentLeagueYear != null
-            ? new LeagueUrlBuilder(_baseAddress, leagueChannel.CurrentLeagueYear.League.LeagueID,
-                leagueChannel.CurrentLeagueYear.Year).BuildUrl(leagueChannel.CurrentLeagueYear.League.LeagueName)
+        var leagueDisplay = leagueChannel?.CurrentYear != null
+            ? new LeagueUrlBuilder(_baseAddress, leagueChannel.CurrentYear.League.LeagueID,
+                leagueChannel.CurrentYear.Year).BuildUrl(leagueChannel.CurrentYear.League.LeagueName)
             : "No league has been set. Use `/set-league` to configure a league.";
 
         var settingsMessage = "";
@@ -53,7 +53,7 @@ public class ViewSettingsCommand : InteractionModuleBase<SocketInteractionContex
             IsInline = false
         });
 
-        if (leagueChannel?.CurrentLeagueYear != null)
+        if (leagueChannel?.CurrentYear != null)
         {
             embedFieldBuilders.Add(new EmbedFieldBuilder
             {
@@ -63,7 +63,7 @@ public class ViewSettingsCommand : InteractionModuleBase<SocketInteractionContex
             });
 
             var publicBiddingRoleDisplay =
-                GetPublicBiddingRoleDisplayText(leagueChannel.CurrentLeagueYear.Options.PickupSystem,
+                GetPublicBiddingRoleDisplayText(leagueChannel.CurrentYear.Options.PickupSystem,
                     leagueChannel.BidAlertRoleID);
             embedFieldBuilders.Add(new EmbedFieldBuilder
             {

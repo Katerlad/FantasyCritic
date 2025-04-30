@@ -12,6 +12,7 @@ using FantasyCritic.Lib.Domain.Trades;
 using FantasyCritic.Lib.Discord;
 using FantasyCritic.Lib.Domain.Calculations;
 using FantasyCritic.Lib.Domain.Combinations;
+using FantasyCritic.Lib.Discord.Entity;
 
 namespace FantasyCritic.Lib.Services;
 
@@ -986,7 +987,7 @@ public class AdminService
 
     private async Task PushDiscordScoreChangeMessages(IReadOnlyList<LeagueYear> oldLeagueYears, IReadOnlyDictionary<Guid, PublisherGameCalculatedStats> calculatedStats)
     {
-        var leagueChannels = await _discordRepo.GetAllMinimalLeagueChannels();
+        var leagueChannels = await _discordRepo.GetAllLeagueChannels();
         var channelLookup = leagueChannels.ToLookup(x => x.LeagueID);
 
         foreach (var oldLeagueYear in oldLeagueYears)
@@ -998,7 +999,8 @@ public class AdminService
             }
             var newLeagueYear = oldLeagueYear.GetUpdatedLeagueYearWithNewScores(calculatedStats);
             var scoreChanges = new LeagueYearScoreChanges(oldLeagueYear, newLeagueYear);
-            await _discordPushService.SendLeagueYearScoreUpdateMessage(scoreChanges, channels);
+            var channelEnitites = channels.Select(x => new LeagueChannelEntity(x)).ToList();
+            await _discordPushService.SendLeagueYearScoreUpdateMessage(scoreChanges, channelEnitites);
         }
     }
 

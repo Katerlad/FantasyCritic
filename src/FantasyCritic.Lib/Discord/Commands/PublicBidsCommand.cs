@@ -59,7 +59,7 @@ public class PublicBidsCommand : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        var leagueYear = leagueChannel.CurrentLeagueYear;
+        var leagueYear = leagueChannel.CurrentYear;
 
         if (leagueYear.Options.PickupSystem.Equals(PickupSystem.SecretBidding))
         {
