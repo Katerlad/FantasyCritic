@@ -93,7 +93,7 @@ public class MySQLDiscordRepo : IDiscordRepo
             ShowNewGameNews,
             ShowEditedGameNews
         ) VALUES (
-            @GuildID, @ChannelID, @EnableGameNews
+            @GuildID, @ChannelID, @EnableGameNews,
             @ShowMightReleaseInYearNews,
             @ShowWillReleaseInYearNews,
             @ShowScoreGameNews,
@@ -536,7 +536,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         };
 
         // Update the SQL query to cast BidAlertRoleID as UNSIGNED to ensure it is returned as ulong.
-        const string leagueChannelSQL = "SELECT GuildID, ChannelID, LeagueID, NotableMissSetting, CAST(BidAlertRoleID AS UNSIGNED) AS BidAlertRoleID FROM tbl_discord_leaguechannel WHERE GuildID = @guildID AND ChannelID = @channelID";
+        const string leagueChannelSQL = "SELECT GuildID, ChannelID, LeagueID, CAST(BidAlertRoleID AS UNSIGNED) AS BidAlertRoleID FROM tbl_discord_leaguechannel WHERE GuildID = @guildID AND ChannelID = @channelID";
 
         var minimalLeagueChannelRecord = await connection.QuerySingleOrDefaultAsync<MinimalLeagueChannelRecord>(leagueChannelSQL, queryObject);
         if (minimalLeagueChannelRecord == null)
