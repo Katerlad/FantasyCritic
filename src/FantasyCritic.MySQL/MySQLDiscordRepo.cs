@@ -218,8 +218,8 @@ public class MySQLDiscordRepo : IDiscordRepo
         await using var connection = new MySqlConnection(_connectionString);
         const string sql = "select * from tbl_discord_leaguechannel";
 
-        var leagueChannels = await connection.QueryAsync<LeagueChannelEntity>(sql);
-        return leagueChannels.Select(l => l.ToMinimalDomain()).ToList();
+        var leagueChannels = await connection.QueryAsync<MinimalLeagueChannelRecord>(sql);
+        return leagueChannels.ToList();
     }
 
     public async Task<IReadOnlyList<LeagueChannelRecord>> GetAllLeagueChannels()
@@ -280,15 +280,11 @@ public class MySQLDiscordRepo : IDiscordRepo
             return new List<LeagueChannelRecord>(); // Return an empty list if no channels are found
         }
 
-        // Query Active League Years for the LeagueID
-        const string activeLeagueYearsSQL = @"
-            SELECT * 
-            FROM tbl_league_years 
-            WHERE LeagueID = @leagueID;";
-        var activeLeagueYears = (await connection.QueryAsync<LeagueYear>(activeLeagueYearsSQL, new { leagueID })).ToList();
+        // Use MySQLFantasyCriticRepo to get Active League Years for the LeagueID
+        var activeLeagueYears = await _fantasyCriticRepo.GetActiveLeagueYears(new List<Guid> { leagueID });
 
         // Get the Current League Year
-        var currentYear = activeLeagueYears.FirstOrDefault(x => x.Key.Year == DateTime.UtcNow.Year);
+        var currentYear = activeLeagueYears.FirstOrDefault(x => x.Year == DateTime.UtcNow.Year);
         if (currentYear == null)
         {
             throw new InvalidOperationException("No current league year found for the league.");
@@ -305,7 +301,7 @@ public class MySQLDiscordRepo : IDiscordRepo
                 FROM tbl_discord_gamenewsoptions 
                 WHERE GuildID = @guildID AND ChannelID = @channelID;";
             var gameNewsSettings = await connection.QuerySingleOrDefaultAsync<GameNewsSettings>(
-                gameNewsSQL, 
+                gameNewsSQL,
                 new { guildID = minimalRecord.GuildID, channelID = minimalRecord.ChannelID });
 
             // Query the League Game News Settings for each channel
@@ -314,13 +310,18 @@ public class MySQLDiscordRepo : IDiscordRepo
                 FROM tbl_discord_league_gamenewsoptions 
                 WHERE GuildID = @guildID AND ChannelID = @channelID;";
             var leagueGameNewsSettings = await connection.QuerySingleOrDefaultAsync<LeagueGameNewsSettings>(
-                leagueGameNewsSQL, 
+                leagueGameNewsSQL,
                 new { guildID = minimalRecord.GuildID, channelID = minimalRecord.ChannelID });
 
-            if(gameNewsSettings == null || leagueGameNewsSettings == null)
+            //This if any of the game news is null that means news hasnt been setup on that channel
+            if (gameNewsSettings == null)
             {
-                throw new InvalidOperationException
-                    ($"There was no game or league news settings for this channel and league {minimalRecord.ChannelID}, {minimalRecord.LeagueID}");
+                gameNewsSettings = new GameNewsSettings();
+            }
+
+            if (leagueGameNewsSettings == null)
+            {
+                leagueGameNewsSettings = new LeagueGameNewsSettings();
             }
             // Create the LeagueChannelRecord and add it to the list
             var leagueChannelrecord = new LeagueChannelRecord(

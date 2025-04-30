@@ -10,17 +10,20 @@ namespace FantasyCritic.Lib.Discord.Handlers;
 internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
 {
     private static readonly ILogger Logger = Log.ForContext<RelevantLeagueGameNewsHandler>();
+    private LeagueYear _currentLeagueYear;
     private readonly IReadOnlyList<LeagueYear> _activeLeagueYears;
     private bool _showEligibleGameNewsOnly;
+    private bool _showCurrentYearGameNewsOnly;
     private NotableMissSetting _notableMissSetting;
     private GameNewsSettings _newsSettings;
     private DiscordChannelKey _channelKey;
     public RelevantLeagueGameNewsHandler(LeagueChannelEntity leagueChannelEntity)
     {
-    
+        _currentLeagueYear = leagueChannelEntity.CurrentYear;
         _notableMissSetting = leagueChannelEntity.LeagueGameNewsSettings.NotableMissSetting;
         _newsSettings = leagueChannelEntity.GameNewsSettings;
         _activeLeagueYears = leagueChannelEntity.ActiveLeagueYears;
+        _showCurrentYearGameNewsOnly = leagueChannelEntity.LeagueGameNewsSettings.ShowCurrentYearGameNewsOnly;
         _channelKey = leagueChannelEntity.ChannelKey;
         _showEligibleGameNewsOnly = leagueChannelEntity.LeagueGameNewsSettings.ShowEligibleGameNewsOnly;
     }
@@ -183,6 +186,12 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         {
             bool inPublisherRoster = leagueYear.Publishers.Any(x => x.MyMasterGames.Contains(masterGame));
             bool eligibleInYear = leagueYear.GameIsEligibleInAnySlot(masterGame, currentDate);
+
+            //Disable any news from other years if that option is enabled by the user
+            if(leagueYear != _currentLeagueYear && _showCurrentYearGameNewsOnly)
+            {
+                return false;
+            }
 
 
             //If the game is in the publisher roster we always want to show it - unless we decide to make this a setting in the future

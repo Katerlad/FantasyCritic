@@ -19,6 +19,7 @@ internal class RelevantGameNewsOnlyHandler : IRelevantGameNewsHandler
     {
         MasterGame masterGame = newsRecord.MasterGame;
         LocalDate currentDate = newsRecord.CurrentDate;
+
         //Exit Early if the user has disabled edited game news for this channel
         if (_gameNewsSettings.ShowEditedGameNews == false)
         {
