@@ -8,7 +8,7 @@ using System.Collections.Concurrent;
 
 namespace FantasyCritic.Lib.Discord.Commands
 {
-    public class SetGameNewsAdvancedCommand : InteractionModuleBase<SocketInteractionContext>
+    public class GameNewsSettingsCommand : InteractionModuleBase<SocketInteractionContext>
     {
         //Service Dependencies
         private readonly IDiscordRepo _discordRepo;
@@ -28,14 +28,14 @@ namespace FantasyCritic.Lib.Discord.Commands
         /// </summary>
         private static readonly ConcurrentDictionary<ulong, CompleteGameNewsSettings> _settingsDictionary = new();
 
-        public SetGameNewsAdvancedCommand(IDiscordRepo discordRepo, IMasterGameRepo masterGameRepo)
+        public GameNewsSettingsCommand(IDiscordRepo discordRepo, IMasterGameRepo masterGameRepo)
         {
             _discordRepo = discordRepo;
             _masterGameRepo = masterGameRepo;
         }
 
-        [SlashCommand("set-game-news-advanced", "Set advanced game news settings.")]
-        public async Task SetGameNewsAdvanced()
+        [SlashCommand("game-news-settings", "View and Change Game News Settings for this channel.")]
+        public async Task GameNewsSettings()
         {
             try
             {
