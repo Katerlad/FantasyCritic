@@ -46,49 +46,28 @@ namespace FantasyCritic.Lib.Discord.Commands
                 {
                     _masterGameTags = await _masterGameRepo.GetMasterGameTags();
                 }
+
                 // Initialize settings for this interaction
                 var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(Context.Guild.Id, Context.Channel.Id);
                 var commandSettings = await _discordRepo.GetCompleteGameNewsSettings(Context.Guild.Id, Context.Channel.Id);
 
                 bool isLeagueChannel = leagueChannel != null;
 
-                //If channel has no command settings, create a new one and set it to recommended settings
+                
+
                 if (commandSettings == null)
                 {
-                    if (leagueChannel == null)
-                    {
-                        commandSettings = new CompleteGameNewsSettings();
-                        commandSettings.Recommended = true;
-                    }
-                    else
-                    {
-                        commandSettings = new CompleteGameNewsSettings();
-                        commandSettings.SetLeagueRecommendedSettings();
-                    }
+                    await SendDisabledGameNewsMessage();
+                    return;
                 }
 
                 if (isLeagueChannel)
                 {
-                    // If game news is currently off, show only the enable option
-                    if (commandSettings.EnableGameNews == false)
-                    {
-                        await SendDisabledGameNewsMessage(commandSettings);
-                    }
-                    else
-                    {
-                        await SendLeagueGameNewsSnapshot(commandSettings);
-                    }
+                    await SendLeagueGameNewsSnapshot(commandSettings);
                 }
                 else
                 {
-                    if (commandSettings.EnableGameNews == false)
-                    {
-                        await SendDisabledGameNewsMessage(commandSettings);
-                    }
-                    else
-                    {
-                        await SendGameNewsOnlySnapShot(commandSettings);
-                    }
+                    await SendGameNewsOnlySnapShot(commandSettings); 
                 }
             }
             catch (Exception ex)
@@ -183,7 +162,7 @@ namespace FantasyCritic.Lib.Discord.Commands
 
         #region Setting Category Messages
 
-        private async Task SendDisabledGameNewsMessage(CompleteGameNewsSettings commandSettings)
+        private async Task SendDisabledGameNewsMessage()
         {
             var enableGameNewsMessage = new ComponentBuilder()
                 .WithButton(GetEnableGameNewsButton())
@@ -242,10 +221,39 @@ namespace FantasyCritic.Lib.Discord.Commands
             // Defer the interaction response to extend the response window
             await DeferAsync();
 
+            var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(Context.Guild.Id, Context.Channel.Id);
+
+            //Check for existing settings in the database
             var settings = await _discordRepo.GetCompleteGameNewsSettings(Context.Guild.Id, Context.Channel.Id);
+
+            //Special condition for enable game news, as this may be the first time the channel had news set up
+            // so we will make a new settings class, and set it default.
+            if (button == "enable_game_news")
+            {
+                if (settings == null)
+                {
+                    settings = new CompleteGameNewsSettings();
+
+                    if (leagueChannel != null)
+                    {
+                        settings.SetLeagueRecommendedSettings();
+                    }
+                    else
+                    {
+                        settings.Recommended = true;
+                    }
+                }
+
+                await CreateNewGameNewsChannel(settings);
+                await SendGameNewsSnapShotMessage(settings);
+                return;
+            }
+
+           
+            //If settings is null here, all buttons below rely on the settings not being null, so error and return
             if (settings == null)
             {
-                await FollowupAsync("Settings could not be found for this interaction.", ephemeral: true);
+                await FollowupAsync("No Game News Settings were found in the database, If this persists contact Fantasy Critic Support",ephemeral: true);
                 return;
             }
 
@@ -269,12 +277,6 @@ namespace FantasyCritic.Lib.Discord.Commands
 
                 case "change_skipped_tags_settings":
                     await SendGameNewsSkipTagsSettingsMessage(settings);
-                    break;
-
-                case "enable_game_news":
-                    settings.EnableGameNews = true;
-                    await CreateNewGameNewsChannel(settings);
-                    await SendGameNewsSnapShotMessage(settings);
                     break;
 
                 case "disable_game_news":
