@@ -1189,7 +1189,7 @@ public class DiscordPushService
         await DiscordRateLimitUtilities.RateLimitMessages(preparedMessages);
     }
 
-    private static async Task<IReadOnlyList<IGameNewsReciever>> GetAllGameNewsReceivers(IDiscordRepo discordRepo, IFantasyCriticRepo fantasyCriticRepo)
+    private static async Task<IReadOnlyList<IGameNewsReceiver>> GetAllGameNewsReceivers(IDiscordRepo discordRepo, IFantasyCriticRepo fantasyCriticRepo)
     {
         var leagueChannelTask = discordRepo.GetAllLeagueChannels();
         var gameNewsChannelsTask = discordRepo.GetAllGameNewsChannels();
@@ -1204,7 +1204,7 @@ public class DiscordPushService
         var channelKeys = leagueChannels.Select(x => x.ChannelKey)
             .Concat(gameNewsChannels.Select(x => x.ChannelKey)).Distinct().ToList();
 
-        List<IGameNewsReciever> gameNewsReceiverChannels = new List<IGameNewsReciever>();
+        List<IGameNewsReceiver> gameNewsReceiverChannels = new List<IGameNewsReceiver>();
         foreach (var channelKey in channelKeys)
         {
             var leagueChannelRecord = leagueChannelDictionary.GetValueOrDefault(channelKey);

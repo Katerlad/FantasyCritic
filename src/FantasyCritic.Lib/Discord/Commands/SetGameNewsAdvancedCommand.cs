@@ -269,6 +269,7 @@ namespace FantasyCritic.Lib.Discord.Commands
             // Defer the interaction response to extend the response window
             await DeferAsync();
 
+            //TODO: Lets remove the lookup table, and call the database for an up to date settings every time. 
             // Retrieve the settings for this message
             if (!_settingsDictionary.TryGetValue(Context.Channel.Id, out var settings))
             {

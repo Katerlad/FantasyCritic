@@ -7,7 +7,7 @@ using Serilog;
 
 
 namespace FantasyCritic.Lib.Discord.Handlers;
-internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
+public class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
 {
     private static readonly ILogger Logger = Log.ForContext<RelevantLeagueGameNewsHandler>();
     private LeagueYear _currentLeagueYear;
@@ -52,9 +52,6 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
 
         return specificRelevance;
     }
-
-
-
     public bool IsEditedGameNewsRelevant(EditedGameNewsRecord newsRecord)
     {
         MasterGame masterGame = newsRecord.MasterGame;
@@ -86,9 +83,6 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         return false;
 
     }
-
-
-
     public bool IsReleasedGameNewsRelevant(ReleaseGameNewsRecord newsRecord)
     {
         MasterGame masterGame = newsRecord.MasterGame;
@@ -119,7 +113,6 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _channelKey);
         return false;
     }
-
     public bool IsScoreGameNewsRelevant(ScoreGameNewsRecord newsRecord)
     {
         MasterGame masterGame = newsRecord.MasterGame;
@@ -161,7 +154,6 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _channelKey);
         return false;
     }
-
     private bool CheckCommonLeagueRelevance(IGameNewsRecord newsRecord)
     {
         MasterGame masterGame = newsRecord.MasterGame;
@@ -200,7 +192,7 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
                 return true;
             }
 
-            //If the game is not eligible in the league year, and user requested to not show ilegible games, skip it
+            //If the game is not eligible in the league year, and user requested to not show ineligible games, skip it
             if (!eligibleInYear && !_showEligibleGameNewsOnly)
             {
                 return false;
@@ -223,7 +215,6 @@ internal class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _channelKey);
         return false;
     }
-
     private bool CheckNotableMissRelevance(IGameNewsRecord newsRecord, bool initialScore)
     {
         MasterGame masterGame = newsRecord.MasterGame;

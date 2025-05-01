@@ -3,7 +3,7 @@ using FantasyCritic.Lib.Discord.Interfaces;
 using FantasyCritic.Lib.Discord.Models;
 
 namespace FantasyCritic.Lib.Discord.Entity;
-public class LeagueChannelEntity : IDiscordChannel, IGameNewsReciever
+public class LeagueChannelEntity : IDiscordChannel, IGameNewsReceiver
 {
 
     //Identifiers

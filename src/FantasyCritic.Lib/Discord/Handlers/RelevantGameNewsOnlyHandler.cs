@@ -5,7 +5,7 @@ using Serilog;
 
 
 namespace FantasyCritic.Lib.Discord.Handlers;
-internal class RelevantGameNewsOnlyHandler : IRelevantGameNewsHandler
+public class RelevantGameNewsOnlyHandler : IRelevantGameNewsHandler
 {
     private static readonly ILogger Logger = Log.ForContext<RelevantGameNewsOnlyHandler>();
     private GameNewsSettings _gameNewsSettings;

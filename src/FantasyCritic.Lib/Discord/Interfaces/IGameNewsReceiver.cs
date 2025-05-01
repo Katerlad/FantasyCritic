@@ -1,5 +1,5 @@
 namespace FantasyCritic.Lib.Discord.Interfaces;
-internal interface IGameNewsReciever
+public interface IGameNewsReceiver
 {
     //Identifiers
     ulong GuildID { get; }

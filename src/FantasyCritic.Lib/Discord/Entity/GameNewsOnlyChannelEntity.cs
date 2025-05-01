@@ -3,7 +3,7 @@ using FantasyCritic.Lib.Discord.Interfaces;
 using FantasyCritic.Lib.Discord.Models;
 
 namespace FantasyCritic.Lib.Discord.Entity;
-internal class GameNewsOnlyChannelEntity : IDiscordChannel, IGameNewsReciever
+public class GameNewsOnlyChannelEntity : IDiscordChannel, IGameNewsReceiver
 {
     public ulong GuildID { get; }
     public ulong ChannelID { get; }

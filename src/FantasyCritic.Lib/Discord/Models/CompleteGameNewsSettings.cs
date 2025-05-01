@@ -7,7 +7,6 @@ public class CompleteGameNewsSettings
 {
     public bool EnableGameNews { get; set; }
     public bool? ShowEligibleGameNewsOnly { get; set; } = null;
-
     public bool? ShowCurrentYearGameNewsOnly { get; set; } = null;
     public NotableMissSetting? NotableMissSetting { get; set; } = null;
     public bool ShowMightReleaseInYearNews { get; set; }
