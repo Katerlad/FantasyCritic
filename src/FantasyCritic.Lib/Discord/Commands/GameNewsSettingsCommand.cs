@@ -23,11 +23,6 @@ namespace FantasyCritic.Lib.Discord.Commands
         /// </summary>
         private static readonly ConcurrentDictionary<ulong, ulong> _channelSnapshotLookup = new();
 
-        /// <summary>
-        /// First - channelId, second - settingsCache
-        /// </summary>
-        private static readonly ConcurrentDictionary<ulong, CompleteGameNewsSettings> _settingsDictionary = new();
-
         public GameNewsSettingsCommand(IDiscordRepo discordRepo, IMasterGameRepo masterGameRepo)
         {
             _discordRepo = discordRepo;
@@ -53,7 +48,7 @@ namespace FantasyCritic.Lib.Discord.Commands
                 }
                 // Initialize settings for this interaction
                 var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(Context.Guild.Id, Context.Channel.Id);
-                var commandSettings = await _discordRepo.GetGameNewsAdvancedCommandSettings(Context.Guild.Id, Context.Channel.Id);
+                var commandSettings = await _discordRepo.GetCompleteGameNewsSettings(Context.Guild.Id, Context.Channel.Id);
 
                 bool isLeagueChannel = leagueChannel != null;
 
@@ -71,28 +66,6 @@ namespace FantasyCritic.Lib.Discord.Commands
                         commandSettings.SetLeagueRecommendedSettings();
                     }
                 }
-
-                //Set Settings Dictionary
-                if (!_settingsDictionary.ContainsKey(Context.Channel.Id))
-                {
-                    bool addedToSettingsDict = _settingsDictionary.TryAdd(Context.Channel.Id, commandSettings);
-
-                    if (addedToSettingsDict == false)
-                    {
-                        await FollowupAsync("Something went wrong, please try resending command", ephemeral: true);
-                    }
-                }
-
-                //Start Interaction Expiration timer to Clean up Dictionary after set time.
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(TimeSpan.FromMinutes(15));
-                    if (_settingsDictionary.ContainsKey(Context.Channel.Id))
-                    {
-                        bool success = _settingsDictionary.TryRemove(Context.Channel.Id, out _);
-                        if (!success) Serilog.Log.Error("Something went wrong removing Setting entry from dictionary after message expiration");
-                    }
-                });
 
                 if (isLeagueChannel)
                 {
@@ -120,7 +93,7 @@ namespace FantasyCritic.Lib.Discord.Commands
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in SetGameNewsAdvanced: {ex.Message}");
+                Console.WriteLine($"Error in GameNewsSettingCommand: {ex.Message}");
                 await FollowupAsync("An error occurred while processing your request.", ephemeral: true);
                 throw;
             }
@@ -269,11 +242,10 @@ namespace FantasyCritic.Lib.Discord.Commands
             // Defer the interaction response to extend the response window
             await DeferAsync();
 
-            //TODO: Lets remove the lookup table, and call the database for an up to date settings every time. 
-            // Retrieve the settings for this message
-            if (!_settingsDictionary.TryGetValue(Context.Channel.Id, out var settings))
+            var settings = await _discordRepo.GetCompleteGameNewsSettings(Context.Guild.Id, Context.Channel.Id);
+            if (settings == null)
             {
-                await FollowupAsync("Settings could not be found for this interaction, Possibly time expired since command was first called.", ephemeral: true);
+                await FollowupAsync("Settings could not be found for this interaction.", ephemeral: true);
                 return;
             }
 
@@ -326,6 +298,7 @@ namespace FantasyCritic.Lib.Discord.Commands
                     await UpdateSnapShotMessage(settings);
                     var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(Context.Guild.Id, Context.Channel.Id);
                     break;
+
                 case "current_year_game_news":
                     settings.ShowCurrentYearGameNewsOnly = !settings.ShowCurrentYearGameNewsOnly;
                     await UpdateGameNewsSettings(settings);
@@ -395,12 +368,24 @@ namespace FantasyCritic.Lib.Discord.Commands
             // Retrieve the selected values
             var selectedValues = component.Data.Values;
 
-            // Retrieve the settings for this message
-            if (!_settingsDictionary.TryGetValue(Context.Channel.Id, out var settings))
+            CompleteGameNewsSettings? settings;
+            try
+            {
+                settings = await _discordRepo.GetCompleteGameNewsSettings(Context.Guild.Id, Context.Channel.Id);
+            }
+            catch (Exception ex)
+            {
+                Serilog.Log.Error(ex, "Error retrieving game news settings for channel {ChannelId}", Context.Channel.Id);
+                await FollowupAsync("Failed to retrieve game news settings.", ephemeral: true);
+                return;
+            }
+
+            if (settings == null)
             {
                 await FollowupAsync("Settings could not be found for this interaction.", ephemeral: true);
                 return;
             }
+
 
             switch (selection)
             {
@@ -510,7 +495,6 @@ namespace FantasyCritic.Lib.Discord.Commands
 
             if (leagueChannel != null)
             {
-                
                 await _discordRepo.SetLeagueGameNewsSetting(
                     leagueChannel.LeagueID,
                     leagueChannel.GuildID,
@@ -667,9 +651,9 @@ namespace FantasyCritic.Lib.Discord.Commands
                 .WithPlaceholder("Notable Miss Options")
                 .WithMinValues(1)
                 .WithMaxValues(1)
-                .AddOption("NotableMissSetting.InitialScore", "InitialScore",description: NotableMissSetting.InitialScore.Description, isDefault: defaultSetting == NotableMissSetting.InitialScore)
-                .AddOption("NotableMissSetting.ScoreUpdates", "ScoreUpdates",description: NotableMissSetting.ScoreUpdates.Description, isDefault: defaultSetting == NotableMissSetting.ScoreUpdates)
-                .AddOption("NotableMissSetting.None", "None",description: NotableMissSetting.None.Description, isDefault: defaultSetting == NotableMissSetting.None);
+                .AddOption("NotableMissSetting.InitialScore", "InitialScore", description: NotableMissSetting.InitialScore.Description, isDefault: defaultSetting == NotableMissSetting.InitialScore)
+                .AddOption("NotableMissSetting.ScoreUpdates", "ScoreUpdates", description: NotableMissSetting.ScoreUpdates.Description, isDefault: defaultSetting == NotableMissSetting.ScoreUpdates)
+                .AddOption("NotableMissSetting.None", "None", description: NotableMissSetting.None.Description, isDefault: defaultSetting == NotableMissSetting.None);
         }
 
         private SelectMenuBuilder GetSkippedTagsSelection(List<MasterGameTag>? skippedTags)

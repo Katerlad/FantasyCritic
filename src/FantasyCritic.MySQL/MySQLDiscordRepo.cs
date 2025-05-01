@@ -484,7 +484,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         );
     }
 
-    public async Task<CompleteGameNewsSettings?> GetGameNewsAdvancedCommandSettings(ulong guildID, ulong channelID)
+    public async Task<CompleteGameNewsSettings?> GetCompleteGameNewsSettings(ulong guildID, ulong channelID)
     {
         await using var connection = new MySqlConnection(_connectionString);
         var queryObject = new

@@ -23,5 +23,5 @@ public interface IDiscordRepo
     Task<ConferenceChannel?> GetConferenceChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null);
     Task<GameNewsOnlyChannelRecord?> GetGameNewsChannel(ulong guildID, ulong channelID);
     Task RemoveAllLeagueChannelsForLeague(Guid leagueID);
-    Task<CompleteGameNewsSettings?> GetGameNewsAdvancedCommandSettings(ulong guildID, ulong channelID);
+    Task<CompleteGameNewsSettings?> GetCompleteGameNewsSettings(ulong guildID, ulong channelID);
 }
