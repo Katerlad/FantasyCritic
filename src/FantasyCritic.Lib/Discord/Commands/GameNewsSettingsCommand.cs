@@ -298,7 +298,6 @@ namespace FantasyCritic.Lib.Discord.Commands
                     await UpdateGameNewsSettings(settings);
                     await UpdateButtonState("eligible_game_news", settings.ShowEligibleGameNewsOnly ?? false);
                     await UpdateSnapShotMessage(settings);
-                    var leagueChannel = await _discordRepo.GetMinimalLeagueChannel(Context.Guild.Id, Context.Channel.Id);
                     break;
 
                 case "current_year_game_news":
