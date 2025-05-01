@@ -112,6 +112,14 @@ public class SetLeagueCommand : InteractionModuleBase<SocketInteractionContext>
         try
         {
             await _discordRepo.SetLeagueChannel(new Guid(leagueId), Context.Guild.Id, Context.Channel.Id);
+
+            var newsChannel = await _discordRepo.GetGameNewsChannel(Context.Guild.Id, Context.Channel.Id);
+
+            if (newsChannel != null)
+            {
+                var newsSetting = new LeagueGameNewsSettings();
+                await _discordRepo.SetLeagueGameNewsSetting(leagueGuid, Context.Guild.Id, Context.Channel.Id, newsSetting);
+            }
         }
         catch (Exception ex)
         {
@@ -131,6 +139,8 @@ public class SetLeagueCommand : InteractionModuleBase<SocketInteractionContext>
                 Context.User));
             return;
         }
+
+
         var leagueUrlBuilder =
             new LeagueUrlBuilder(_fantasyCriticSettings.BaseAddress, league.LeagueID, dateToCheck.Year);
         var leagueLinkWithName = leagueUrlBuilder.BuildUrl(league.LeagueName);

@@ -28,15 +28,7 @@ public record LeagueChannelRecord(
     ulong? BidAlertRoleID
 )
 {
-    public IReadOnlyList<LeagueYear> ActiveLeagueYears { get; init; } = ActiveLeagueYears;
-    public LeagueYear CurrentYear { get; init; } = CurrentYear;
-    public ulong GuildID { get; init; } = GuildID;
-    public ulong ChannelID { get; init; } = ChannelID;
-    public Guid LeagueID { get; init; } = LeagueID;
     public DiscordChannelKey ChannelKey => new DiscordChannelKey(GuildID, ChannelID);
-    public LeagueGameNewsSettings LeagueGameNewsSettings { get; init; } = LeagueGameNewsSettings;
-    public GameNewsSettings GameNewsSettings { get; init; } = GameNewsSettings;
-    public ulong? BidAlertRoleID { get; init; } = BidAlertRoleID;
 }
 
 public record GameNewsOnlyChannelRecord(

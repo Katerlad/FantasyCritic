@@ -61,19 +61,25 @@ public class MySQLDiscordRepo : IDiscordRepo
         await connection.ExecuteAsync(sql, conferenceChannelEntity);
     }
 
-    public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, NotableMissSetting notableMissesSetting, bool sendCurrentYearNewsOnly, bool sendEligibleNewsOnly)
+    public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, LeagueGameNewsSettings leagueGameNewsSettings)
     {
         await using var connection = new MySqlConnection(_connectionString);
-        var leagueGameNewsEntity = new LeagueGameNewsSettingEntity(guildID, channelID, leagueID, sendEligibleNewsOnly, sendCurrentYearNewsOnly, notableMissesSetting);
+        var leagueGameNewsEntity = new LeagueGameNewsSettingsEntity(
+            guildID,
+            channelID,
+            leagueID,
+            leagueGameNewsSettings.ShowEligibleGameNewsOnly,
+            leagueGameNewsSettings.ShowCurrentYearGameNewsOnly,
+            leagueGameNewsSettings.NotableMissSetting);
         var sql = @"
             INSERT INTO tbl_discord_league_gamenewsoptions 
-            (LeagueID, GuildID, ChannelID, NotableMissSetting, SendCurrentYearGameNewsOnly, SendEligibleGameNewsOnly)
+            (LeagueID, GuildID, ChannelID, NotableMissSetting, ShowEligibleGameNewsOnly, ShowCurrentYearGameNewsOnly)
             VALUES 
-            (@LeagueID, @GuildID, @ChannelID, @NotableMissSetting, @SendCurrentYearGameNewsOnly, @SendEligibleGameNewsOnly)
+            (@LeagueID, @GuildID, @ChannelID, @NotableMissSetting, @ShowEligibleGameNewsOnly, @ShowCurrentYearGameNewsOnly)
             ON DUPLICATE KEY UPDATE 
-            NotableMissSetting = @NotableMissSetting, 
-            SendCurrentYearGameNewsOnly = @SendCurrentYearGameNewsOnly, 
-            SendEligibleGameNewsOnly = @SendEligibleGameNewsOnly;";
+            NotableMissSetting = @NotableMissSetting,
+            ShowEligibleGameNewsOnly = @ShowEligibleGameNewsOnly,
+            ShowCurrentYearGameNewsOnly = @ShowCurrentYearGameNewsOnly;";
         await connection.ExecuteAsync(sql, leagueGameNewsEntity);
     }
 
@@ -141,10 +147,12 @@ public class MySQLDiscordRepo : IDiscordRepo
 
         await connection.ExecuteAsync(insertOptionsSQL, optionsParam, transaction);
 
-        // Re-insert tag skips if they existed
-        await connection.BulkInsertAsync(masterGameTagEntities, "tbl_discord_gamenewschannelskiptag", 500, transaction);
-
         await transaction.CommitAsync();
+
+        // Re-insert tag skips
+        await SetSkippedGameNewsTags(guildID, channelID, gameNewsSettings.SkippedTags);
+
+        
     }
 
     public async Task SetSkippedGameNewsTags(ulong guildID, ulong channelID, IEnumerable<MasterGameTag> skippedTags)
@@ -507,8 +515,12 @@ public class MySQLDiscordRepo : IDiscordRepo
         // Map the result to GameNewsAdvancedSettings
         return new CompleteGameNewsSettings
         {
-            EnableGameNews = result.EnableGameNews,
+            //League Game News Settings
+            ShowEligibleGameNewsOnly = result.ShowEligibleGameNewsOnly,
+            ShowCurrentYearGameNewsOnly = result.ShowCurrentYearGameNewsOnly,
             NotableMissSetting = NotableMissSetting.TryFromValue(result.NotableMissSetting),
+            //Core Game News Settings
+            EnableGameNews = result.EnableGameNews,
             ShowMightReleaseInYearNews = result.ShowMightReleaseInYearNews,
             ShowWillReleaseInYearNews = result.ShowWillReleaseInYearNews,
             ShowScoreGameNews = result.ShowScoreGameNews,
@@ -566,12 +578,19 @@ public class MySQLDiscordRepo : IDiscordRepo
 
         // Query the League Game News Settings for the league channel
         const string leagueGameNewsSQL = "SELECT * FROM tbl_discord_league_gamenewsoptions WHERE GuildID = @guildID AND ChannelID = @channelID;";
-        var leagueGameNewsSettings = await connection.QuerySingleOrDefaultAsync<LeagueGameNewsSettings>(leagueGameNewsSQL, queryObject);
-        if (leagueGameNewsSettings == null)
+        var leagueGameNewsSettingsEntity = await connection.QuerySingleOrDefaultAsync<LeagueGameNewsSettingsEntity>(leagueGameNewsSQL, queryObject);
+        if (leagueGameNewsSettingsEntity == null)
         {
             _logger.Warning("No league game news settings found for GuildID: {GuildID}, ChannelID: {ChannelID}", guildID, channelID);
             return null;
         }
+
+        // Map the LeagueGameNewsSettingsEntity to LeagueGameNewsSettings
+        var leagueGameNewsSettings = new LeagueGameNewsSettings(
+            leagueGameNewsSettingsEntity.ShowEligibleGameNewsOnly,
+            leagueGameNewsSettingsEntity.ShowCurrentYearGameNewsOnly,
+            NotableMissSetting.FromValue(leagueGameNewsSettingsEntity.NotableMissSetting));
+
 
         return new LeagueChannelEntity(minimalLeagueChannelRecord, activeYears.ToList(), currentYear, gameNewsSettings, leagueGameNewsSettings);
     }

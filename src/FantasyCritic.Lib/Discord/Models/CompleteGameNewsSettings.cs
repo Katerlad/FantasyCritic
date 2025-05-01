@@ -39,6 +39,7 @@ public class CompleteGameNewsSettings
                 ShowEligibleGameNewsOnly = ShowEligibleGameNewsOnly == null ? null : false;
                 ShowCurrentYearGameNewsOnly = ShowCurrentYearGameNewsOnly == null ? null : false;
                 NotableMissSetting = NotableMissSetting == null ? null : NotableMissSetting.ScoreUpdates;
+                EnableGameNews = true;
                 ShowMightReleaseInYearNews = true;
                 ShowWillReleaseInYearNews = true;
                 ShowScoreGameNews = true;
@@ -73,7 +74,8 @@ public class CompleteGameNewsSettings
             ShowScoreGameNews = ShowScoreGameNews,
             ShowReleasedGameNews = ShowAlreadyReleasedGameNews,
             ShowEditedGameNews = ShowEditedGameNews,
-            ShowNewGameNews = ShowNewGameNews
+            ShowNewGameNews = ShowNewGameNews,
+            SkippedTags = SkippedTags
         };
     }
     public string ToDiscordMessage()

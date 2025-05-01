@@ -37,9 +37,9 @@ public class LeagueChannelEntity : IDiscordChannel, IGameNewsReceiver
         ChannelID = record.ChannelID;
         CurrentYear = currentYear;
         ActiveLeagueYears = activeLeagueYears;
-        RelevantGameNewsHandler = new RelevantLeagueGameNewsHandler(this);
         GameNewsSettings = gameNewsOnlySettings;
         LeagueGameNewsSettings = leagueGameNewsSettings;
+        RelevantGameNewsHandler = new RelevantLeagueGameNewsHandler(this);
     }
 
     public LeagueChannelRecord ToDomain(LeagueYear leagueYear)

@@ -294,17 +294,23 @@ namespace FantasyCritic.Lib.Discord.Commands
                     break;
 
                 case "eligible_game_news":
-                    settings.ShowEligibleGameNewsOnly = !settings.ShowEligibleGameNewsOnly;
-                    await UpdateGameNewsSettings(settings);
-                    await UpdateButtonState("eligible_game_news", settings.ShowEligibleGameNewsOnly ?? false);
-                    await UpdateSnapShotMessage(settings);
+                    if (settings.ShowEligibleGameNewsOnly.HasValue)
+                    {
+                        settings.ShowEligibleGameNewsOnly = !settings.ShowEligibleGameNewsOnly.Value;
+                        await UpdateGameNewsSettings(settings);
+                        await UpdateButtonState("eligible_game_news", settings.ShowEligibleGameNewsOnly.Value);
+                        await UpdateSnapShotMessage(settings);
+                    }
                     break;
 
                 case "current_year_game_news":
-                    settings.ShowCurrentYearGameNewsOnly = !settings.ShowCurrentYearGameNewsOnly;
-                    await UpdateGameNewsSettings(settings);
-                    await UpdateButtonState("current_year_game_news", settings.ShowCurrentYearGameNewsOnly ?? false);
-                    await UpdateSnapShotMessage(settings);
+                    if (settings.ShowCurrentYearGameNewsOnly.HasValue)
+                    {
+                        settings.ShowCurrentYearGameNewsOnly = !settings.ShowCurrentYearGameNewsOnly.Value;
+                        await UpdateGameNewsSettings(settings);
+                        await UpdateButtonState("current_year_game_news", settings.ShowCurrentYearGameNewsOnly.Value);
+                        await UpdateSnapShotMessage(settings);
+                    }
                     break;
 
                 case "might_release_in_year":
@@ -412,9 +418,6 @@ namespace FantasyCritic.Lib.Discord.Commands
                     Serilog.Log.Error($"Couldn't handle Selection Menu: {selection}");
                     return;
             }
-
-            // Example: Respond with the selected values
-            await FollowupAsync($"You selected: {string.Join(", ", selectedValues)}", ephemeral: true);
         }
 
         private async Task UpdateButtonState(string buttonId, bool newState)
@@ -475,7 +478,16 @@ namespace FantasyCritic.Lib.Discord.Commands
             if (leagueChannel != null)
             {
                 await _discordRepo.SetGameNewsSetting(guildID, channelID, settings.ToGameNewsSettings());
-                await _discordRepo.SetLeagueGameNewsSetting(leagueChannel.LeagueID, guildID, channelID, settings.NotableMissSetting ?? NotableMissSetting.None, settings.ShowCurrentYearGameNewsOnly ?? false, settings.ShowEligibleGameNewsOnly ?? false);
+                await _discordRepo.SetLeagueGameNewsSetting(
+                    leagueChannel.LeagueID,
+                    guildID,
+                    channelID,
+                    new LeagueGameNewsSettings(
+                        settings.ShowEligibleGameNewsOnly ?? false,
+                        settings.ShowCurrentYearGameNewsOnly ?? false,
+                        settings.NotableMissSetting ?? NotableMissSetting.None
+                    ));
+
             }
             else
             {
@@ -500,9 +512,11 @@ namespace FantasyCritic.Lib.Discord.Commands
                     leagueChannel.LeagueID,
                     leagueChannel.GuildID,
                     leagueChannel.ChannelID,
-                    settings.NotableMissSetting ?? NotableMissSetting.None,
-                    settings.ShowCurrentYearGameNewsOnly ?? false,
-                    settings.ShowEligibleGameNewsOnly ?? false
+                    new LeagueGameNewsSettings(
+                        settings.ShowEligibleGameNewsOnly ?? false,
+                        settings.ShowCurrentYearGameNewsOnly ?? false,
+                        settings.NotableMissSetting ?? NotableMissSetting.None
+                        )
                     );
             }
 
