@@ -28,8 +28,6 @@ public class AdminController : FantasyCriticController
     private readonly DiscordPushService _discordPushService;
     private readonly IMasterGameRepo _masterGameRepo;
 
-    private const string TEST_GAME_ID = "5ab643d0-bd23-46fb-934f-9eff940590bc";
-
     public AdminController(AdminService adminService, FantasyCriticService fantasyCriticService, IClock clock, InterLeagueService interLeagueService,
         ILogger<AdminController> logger, GameAcquisitionService gameAcquisitionService, FantasyCriticUserManager userManager,
         IWebHostEnvironment webHostEnvironment, EmailSendingService emailSendingService, DiscordPushService discordPushService, IMasterGameRepo masterGameRepo)
@@ -121,8 +119,17 @@ public class AdminController : FantasyCriticController
     [HttpPost]
     public async Task<IActionResult> SendSpoofScoreUpdate()
     {
-        var masterGame = await _masterGameRepo.GetMasterGame(new Guid(TEST_GAME_ID));
-        if (masterGame == null) return BadRequest();
+        var isProduction = string.Equals(_webHostEnvironment.EnvironmentName, "PRODUCTION", StringComparison.OrdinalIgnoreCase);
+        if (isProduction)
+        {
+            return BadRequest("This is a test endpoint. Do not use in production.");
+        }
+        var currentSupportedYear = (await _interLeagueService.GetSupportedYears())
+            .Where(x => x.OpenForPlay && !x.Finished)
+            .MaxBy(x => x.Year);
+
+        var masterGame = await _masterGameRepo.GetTestMasterGame(currentSupportedYear!.Year);
+
         _discordPushService.QueueGameCriticScoreUpdateMessage(masterGame, 80m, 85m);
         await _discordPushService.SendBatchedMasterGameUpdates();
 
@@ -132,8 +139,17 @@ public class AdminController : FantasyCriticController
     [HttpPost]
     public async Task<IActionResult> SendSpoofEditUpdate()
     {
-        var masterGameYear = await _masterGameRepo.GetMasterGameYear(new Guid(TEST_GAME_ID), 2025);
-        if (masterGameYear == null) return BadRequest();
+        var isProduction = string.Equals(_webHostEnvironment.EnvironmentName, "PRODUCTION", StringComparison.OrdinalIgnoreCase);
+        if (isProduction)
+        {
+            return BadRequest("This is a test endpoint. Do not use in production.");
+        }
+        var currentSupportedYear = (await _interLeagueService.GetSupportedYears())
+            .Where(x => x.OpenForPlay && !x.Finished)
+            .MaxBy(x => x.Year);
+
+        var masterGameYear = await _masterGameRepo.GetTestMasterGameYear(currentSupportedYear!.Year);
+
         _discordPushService.QueueMasterGameEditMessage(masterGameYear, masterGameYear, new List<string>() { "The Test Game Was Changed" });
         await _discordPushService.SendBatchedMasterGameUpdates();
         return Ok();
@@ -142,9 +158,17 @@ public class AdminController : FantasyCriticController
     [HttpPost]
     public async Task<IActionResult> SendSpoofNewUpdate()
     {
+        var isProduction = string.Equals(_webHostEnvironment.EnvironmentName, "PRODUCTION", StringComparison.OrdinalIgnoreCase);
+        if (isProduction)
+        {
+            return BadRequest("This is a test endpoint. Do not use in production.");
+        }
 
-        var masterGame = await _masterGameRepo.GetMasterGame(new Guid(TEST_GAME_ID));
-        if (masterGame == null) return BadRequest();
+        var currentSupportedYear = (await _interLeagueService.GetSupportedYears())
+            .Where(x => x.OpenForPlay && !x.Finished)
+            .MaxBy(x => x.Year);
+
+        var masterGame = await _masterGameRepo.GetTestMasterGame(currentSupportedYear!.Year);
         _discordPushService.QueueNewMasterGameMessage(masterGame);
         await _discordPushService.SendBatchedMasterGameUpdates();
 
@@ -154,9 +178,17 @@ public class AdminController : FantasyCriticController
     [HttpPost]
     public async Task<IActionResult> SendSpoofReleasedUpdate()
     {
-        var masterGame = await _masterGameRepo.GetMasterGameYear(new Guid(TEST_GAME_ID), 2025);
-        if (masterGame == null) return BadRequest();
-        var masterGameList = new List<MasterGameYear>() { masterGame };
+        var isProduction = string.Equals(_webHostEnvironment.EnvironmentName, "PRODUCTION", StringComparison.OrdinalIgnoreCase);
+        if (isProduction)
+        {
+            return BadRequest("This is a test endpoint. Do not use in production.");
+        }
+        var currentSupportedYear = (await _interLeagueService.GetSupportedYears())
+            .Where(x => x.OpenForPlay && !x.Finished)
+            .MaxBy(x => x.Year);
+
+        var masterGameYear = await _masterGameRepo.GetTestMasterGameYear(currentSupportedYear!.Year);
+        var masterGameList = new List<MasterGameYear>() { masterGameYear };
         await _discordPushService.SendGameReleaseUpdates(masterGameList);
         return Ok();
     }
