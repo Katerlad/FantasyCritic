@@ -23,8 +23,8 @@ public record LeagueChannelRecord(
     Guid LeagueID,
     LeagueYear CurrentYear,
     IReadOnlyList<LeagueYear> ActiveLeagueYears,
-    LeagueGameNewsSettings LeagueGameNewsSettings,
-    GameNewsSettings GameNewsSettings,
+    LeagueGameNewsSettingsRecord? LeagueGameNewsSettings,
+    GameNewsSettingsRecord? GameNewsSettings,
     ulong? BidAlertRoleID
 )
 {
@@ -35,7 +35,7 @@ public record GameNewsOnlyChannelRecord(
     ulong GuildID,
     ulong ChannelID,
     IReadOnlyList<MasterGameTag> SkippedTags,
-    GameNewsSettings GameNewsSettings)
+    GameNewsSettingsRecord? GameNewsSettings)
 {
     public DiscordChannelKey ChannelKey => new DiscordChannelKey(GuildID, ChannelID);
 }

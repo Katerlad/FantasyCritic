@@ -8,8 +8,8 @@ public class GameNewsOnlyChannelEntity : IDiscordChannel, IGameNewsReceiver
     public ulong GuildID { get; }
     public ulong ChannelID { get; }
     public DiscordChannelKey ChannelKey => new DiscordChannelKey(GuildID, ChannelID);
-    public IRelevantGameNewsHandler RelevantGameNewsHandler { get; }
-    public GameNewsSettings GameNewsSettings { get; }
+    public IRelevantGameNewsHandler? RelevantGameNewsHandler { get => GetRelevantGameNewsHandler(); }
+    public GameNewsSettingsRecord? GameNewsSettings { get; }
     public IReadOnlyList<LeagueYear> ActiveLeagueYears { get; }
 
     public GameNewsOnlyChannelEntity(GameNewsOnlyChannelRecord record)
@@ -17,7 +17,16 @@ public class GameNewsOnlyChannelEntity : IDiscordChannel, IGameNewsReceiver
         GuildID = record.GuildID;
         ChannelID = record.ChannelID;
         GameNewsSettings = record.GameNewsSettings;
-        RelevantGameNewsHandler = new RelevantGameNewsOnlyHandler(record.GameNewsSettings,ChannelKey);
         ActiveLeagueYears = new List<LeagueYear>();
+    }
+
+    private IRelevantGameNewsHandler? GetRelevantGameNewsHandler()
+    {
+        if (GameNewsSettings != null)
+        {
+            return new RelevantGameNewsOnlyHandler(GameNewsSettings,ChannelKey);
+        }
+
+        return null;
     }
 }

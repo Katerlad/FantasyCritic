@@ -6,33 +6,23 @@ namespace FantasyCritic.Lib.Discord.Enums;
 /// </summary>
 public class RequestedGameNewsSetting : TypeSafeEnum<RequestedGameNewsSetting>
 {
-    private static readonly GameNewsSettings _all = new GameNewsSettings()
+    private static readonly GameNewsSettingsRecord _all = new GameNewsSettingsRecord()
     {
         AllGameUpdatesEnabled = true,
     };
 
-    private static readonly GameNewsSettings _willReleaseInYear = new GameNewsSettings()
+    private static readonly GameNewsSettingsRecord _willReleaseInYear = new GameNewsSettingsRecord()
     {
         ShowWillReleaseInYearNews = true,
     };
 
-    private static readonly GameNewsSettings _mightReleaseInYear = new GameNewsSettings()
-    {
-        ShowWillReleaseInYearNews = true,
-        ShowMightReleaseInYearNews = true,
-    };
-
-    private static readonly GameNewsSettings _recommended = new GameNewsSettings()
+    private static readonly GameNewsSettingsRecord _mightReleaseInYear = new GameNewsSettingsRecord()
     {
         ShowWillReleaseInYearNews = true,
         ShowMightReleaseInYearNews = true,
-        ShowScoreGameNews = true,
-        ShowReleasedGameNews = true,
-        ShowNewGameNews = true,
-        ShowEditedGameNews = true,
     };
 
-    private static readonly GameNewsSettings _leagueGamesOnly = new GameNewsSettings()
+    private static readonly GameNewsSettingsRecord _recommended = new GameNewsSettingsRecord()
     {
         ShowWillReleaseInYearNews = true,
         ShowMightReleaseInYearNews = true,
@@ -42,7 +32,17 @@ public class RequestedGameNewsSetting : TypeSafeEnum<RequestedGameNewsSetting>
         ShowEditedGameNews = true,
     };
 
-    private static readonly GameNewsSettings _off = new GameNewsSettings()
+    private static readonly GameNewsSettingsRecord _leagueGamesOnly = new GameNewsSettingsRecord()
+    {
+        ShowWillReleaseInYearNews = true,
+        ShowMightReleaseInYearNews = true,
+        ShowScoreGameNews = true,
+        ShowReleasedGameNews = true,
+        ShowNewGameNews = true,
+        ShowEditedGameNews = true,
+    };
+
+    private static readonly GameNewsSettingsRecord _off = new GameNewsSettingsRecord()
     {
         AllGameUpdatesEnabled = false,
     };
@@ -57,17 +57,17 @@ public class RequestedGameNewsSetting : TypeSafeEnum<RequestedGameNewsSetting>
     public static readonly RequestedGameNewsSetting Off = new RequestedGameNewsSetting("Off", _off);
 
     // Constructor is private: values are defined within this class only!
-    private RequestedGameNewsSetting(string value, GameNewsSettings normalSetting)
+    private RequestedGameNewsSetting(string value, GameNewsSettingsRecord normalSetting)
         : base(value)
     {
         NormalSetting = normalSetting;
     }
 
-    public GameNewsSettings NormalSetting { get; }
+    public GameNewsSettingsRecord NormalSetting { get; }
 
     public override string ToString() => Value;
 
-    public GameNewsSettings ToNormalSetting()
+    public GameNewsSettingsRecord ToNormalSetting()
     {
         if (NormalSetting == null)
         {

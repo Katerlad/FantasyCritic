@@ -6,7 +6,8 @@ namespace FantasyCritic.Lib.Discord.Models;
 public class CompleteGameNewsSettings
 {
     public bool EnableGameNews { get; set; }
-    public bool? ShowEligibleGameNewsOnly { get; set; } = null;
+    public bool? ShowPickedGameNews { get; set; } = null;
+    public bool? ShowEligibleGameNews { get; set; } = null;
     public bool? ShowCurrentYearGameNewsOnly { get; set; } = null;
     public NotableMissSetting? NotableMissSetting { get; set; } = null;
     public bool ShowMightReleaseInYearNews { get; set; }
@@ -21,7 +22,8 @@ public class CompleteGameNewsSettings
     {
         get
         {
-            return (ShowEligibleGameNewsOnly == false || ShowEligibleGameNewsOnly == null) &&
+            return (ShowPickedGameNews == true || ShowPickedGameNews == null) &&
+                   (ShowEligibleGameNews == true || ShowEligibleGameNews == null) &&
                    (ShowCurrentYearGameNewsOnly == false || ShowCurrentYearGameNewsOnly == null) &&
                    (NotableMissSetting == NotableMissSetting.ScoreUpdates || NotableMissSetting == null) &&
                    ShowMightReleaseInYearNews &&
@@ -36,7 +38,8 @@ public class CompleteGameNewsSettings
         {
             if (value)
             {
-                ShowEligibleGameNewsOnly = ShowEligibleGameNewsOnly == null ? null : false;
+                ShowPickedGameNews = ShowPickedGameNews == null ? null : true;
+                ShowEligibleGameNews = ShowEligibleGameNews == null ? null : true;
                 ShowCurrentYearGameNewsOnly = ShowCurrentYearGameNewsOnly == null ? null : false;
                 NotableMissSetting = NotableMissSetting == null ? null : NotableMissSetting.ScoreUpdates;
                 EnableGameNews = true;
@@ -53,7 +56,9 @@ public class CompleteGameNewsSettings
 
     public void SetLeagueRecommendedSettings()
     {
-        ShowEligibleGameNewsOnly = false;
+        EnableGameNews = true;
+        ShowPickedGameNews = true;
+        ShowEligibleGameNews = true;
         ShowCurrentYearGameNewsOnly = false;
         NotableMissSetting = NotableMissSetting.ScoreUpdates;
         ShowMightReleaseInYearNews = true;
@@ -64,9 +69,9 @@ public class CompleteGameNewsSettings
         ShowEditedGameNews = true;
     }
 
-    public GameNewsSettings ToGameNewsSettings()
+    public GameNewsSettingsRecord ToGameNewsSettings()
     {
-        return new GameNewsSettings()
+        return new GameNewsSettingsRecord()
         {
             EnableGameNews = EnableGameNews,
             ShowMightReleaseInYearNews = ShowMightReleaseInYearNews,
@@ -88,15 +93,16 @@ public class CompleteGameNewsSettings
 
         embedMessage.AppendLine("\n**General News Settings:**");
         embedMessage.AppendLine($"  -- Game News Enabled: {(EnableGameNews == false ? "**False**" : "**True**")}");
-        embedMessage.AppendLine($"  -- Is League Channel: {(ShowEligibleGameNewsOnly != null ? "**True**" : "**False**")}");
+        embedMessage.AppendLine($"  -- Is League Channel: {(ShowEligibleGameNews != null ? "**True**" : "**False**")}");
         embedMessage.AppendLine($"  -- Setting State: {(Recommended == true ? "**Recommended**" : "**Custom**")}");
 
-        
 
-        if (ShowEligibleGameNewsOnly != null)
+        //If eligiblegame news is null that should be an idicator that this is not a league channel
+        if (ShowEligibleGameNews != null)
         {
             embedMessage.AppendLine("\n**LeagueChannel Settings:**");
-            embedMessage.AppendLine($"  -- {GetEmoji(ShowEligibleGameNewsOnly)} Show Eligible Game News Only");
+            embedMessage.AppendLine($"  -- {GetEmoji(ShowPickedGameNews)} Show Picked Game News");
+            embedMessage.AppendLine($"  -- {GetEmoji(ShowEligibleGameNews)} Show Eligible Game News");
             embedMessage.AppendLine($"  -- {GetEmoji(ShowCurrentYearGameNewsOnly)} Show Current Year Game News Only");
         }
 

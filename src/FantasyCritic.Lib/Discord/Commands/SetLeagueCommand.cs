@@ -117,7 +117,7 @@ public class SetLeagueCommand : InteractionModuleBase<SocketInteractionContext>
 
             if (newsChannel != null)
             {
-                var newsSetting = new LeagueGameNewsSettings();
+                var newsSetting = new LeagueGameNewsSettingsRecord();
                 await _discordRepo.SetLeagueGameNewsSetting(leagueGuid, Context.Guild.Id, Context.Channel.Id, newsSetting);
             }
         }

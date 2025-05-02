@@ -12,20 +12,27 @@ public class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
     private static readonly ILogger Logger = Log.ForContext<RelevantLeagueGameNewsHandler>();
     private LeagueYear _currentLeagueYear;
     private readonly IReadOnlyList<LeagueYear> _activeLeagueYears;
-    private bool _showEligibleGameNewsOnly;
+    private bool _showPickedGameNews;
+    private bool _showEligibleGameNews;
     private bool _showCurrentYearGameNewsOnly;
     private NotableMissSetting _notableMissSetting;
-    private GameNewsSettings _newsSettings;
+    private GameNewsSettingsRecord _newsSettings;
     private DiscordChannelKey _channelKey;
     public RelevantLeagueGameNewsHandler(LeagueChannelEntity leagueChannelEntity)
     {
+        if (leagueChannelEntity.LeagueGameNewsSettings == null || leagueChannelEntity.GameNewsSettings == null)
+        {
+            throw new ArgumentNullException(nameof(leagueChannelEntity), "LeagueGameNewsSettings and GameNewsSettings cannot be null.");
+        }
+
+        _showPickedGameNews = leagueChannelEntity.LeagueGameNewsSettings.ShowPickedGameNews;
         _currentLeagueYear = leagueChannelEntity.CurrentYear;
         _notableMissSetting = leagueChannelEntity.LeagueGameNewsSettings.NotableMissSetting;
         _newsSettings = leagueChannelEntity.GameNewsSettings;
         _activeLeagueYears = leagueChannelEntity.ActiveLeagueYears;
         _showCurrentYearGameNewsOnly = leagueChannelEntity.LeagueGameNewsSettings.ShowCurrentYearGameNewsOnly;
         _channelKey = leagueChannelEntity.ChannelKey;
-        _showEligibleGameNewsOnly = leagueChannelEntity.LeagueGameNewsSettings.ShowEligibleGameNewsOnly;
+        _showEligibleGameNews = leagueChannelEntity.LeagueGameNewsSettings.ShowEligibleGameNews;
     }
 
     public bool IsNewGameNewsRelevant(NewGameNewsRecord newsRecord)
@@ -173,6 +180,7 @@ public class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
             return false;
         }
 
+
         //Now check the years in the league and compare the news settings 
         foreach (var leagueYear in _activeLeagueYears)
         {
@@ -185,6 +193,12 @@ public class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
                 return false;
             }
 
+            //This is the logic for only showing picked games in the league
+            if(!_showPickedGameNews && inPublisherRoster == false)
+            {
+                return false;
+            }
+
 
             //If the game is in the publisher roster we always want to show it - unless we decide to make this a setting in the future
             if (inPublisherRoster)
@@ -193,7 +207,7 @@ public class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
             }
 
             //If the game is not eligible in the league year, and user requested to not show ineligible games, skip it
-            if (!eligibleInYear && !_showEligibleGameNewsOnly)
+            if (!eligibleInYear && !_showEligibleGameNews)
             {
                 return false;
             }

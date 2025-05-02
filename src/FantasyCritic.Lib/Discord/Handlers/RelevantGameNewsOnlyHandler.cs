@@ -7,10 +7,10 @@ using Serilog;
 namespace FantasyCritic.Lib.Discord.Handlers;
 public class RelevantGameNewsOnlyHandler : IRelevantGameNewsHandler
 {
-    private static readonly ILogger Logger = Log.ForContext<RelevantGameNewsOnlyHandler>();
-    private GameNewsSettings _gameNewsSettings;
+    private static readonly ILogger _logger = Log.ForContext<RelevantGameNewsOnlyHandler>();
+    private GameNewsSettingsRecord _gameNewsSettings;
     private DiscordChannelKey _discordChannelKey;
-    public RelevantGameNewsOnlyHandler(GameNewsSettings gameNewsSettings, DiscordChannelKey discordChannelKey)
+    public RelevantGameNewsOnlyHandler(GameNewsSettingsRecord gameNewsSettings, DiscordChannelKey discordChannelKey)
     {
         _gameNewsSettings = gameNewsSettings;
         _discordChannelKey = discordChannelKey;
@@ -41,7 +41,7 @@ public class RelevantGameNewsOnlyHandler : IRelevantGameNewsHandler
         }
 
         //Fallback to false if no specific relevance is found
-        Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _discordChannelKey);
+        _logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _discordChannelKey);
         return false;
     }
 
@@ -71,7 +71,7 @@ public class RelevantGameNewsOnlyHandler : IRelevantGameNewsHandler
         }
 
         //Fallback to false if no specific relevance is found
-        Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _discordChannelKey);
+        _logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _discordChannelKey);
         return false;
     }
 
@@ -101,7 +101,7 @@ public class RelevantGameNewsOnlyHandler : IRelevantGameNewsHandler
         }
 
         //Fallback to false if no specific relevance is found
-        Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _discordChannelKey);
+        _logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _discordChannelKey);
         return false;
     }
 
@@ -131,7 +131,7 @@ public class RelevantGameNewsOnlyHandler : IRelevantGameNewsHandler
         }
 
         //Fallback to false if no specific relevance is found
-        Logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _discordChannelKey);
+        _logger.Warning("Invalid game news configuration for: {gameName}, {channelKey}", masterGame.GameName, _discordChannelKey);
         return false;
     }
 

@@ -6,6 +6,6 @@ public interface IGameNewsReceiver
     ulong ChannelID { get; }
 
     IReadOnlyList<LeagueYear> ActiveLeagueYears { get; }
-    GameNewsSettings GameNewsSettings { get; }
-    IRelevantGameNewsHandler RelevantGameNewsHandler { get; }
+    GameNewsSettingsRecord? GameNewsSettings { get; }
+    IRelevantGameNewsHandler? RelevantGameNewsHandler { get; }
 }

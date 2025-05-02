@@ -11,11 +11,11 @@ public class LeagueChannelEntity : IDiscordChannel, IGameNewsReceiver
     public ulong ChannelID { get; }
     public Guid LeagueID  { get; }
     public DiscordChannelKey ChannelKey => new DiscordChannelKey(GuildID, ChannelID);
-    public LeagueGameNewsSettings LeagueGameNewsSettings { get; }
-    public GameNewsSettings GameNewsSettings { get; }
+    public LeagueGameNewsSettingsRecord? LeagueGameNewsSettings { get; }
+    public GameNewsSettingsRecord? GameNewsSettings { get; }
     public LeagueYear CurrentYear { get; }
     public IReadOnlyList<LeagueYear> ActiveLeagueYears { get; set; } 
-    public IRelevantGameNewsHandler RelevantGameNewsHandler { get; }
+    public IRelevantGameNewsHandler? RelevantGameNewsHandler { get => GetRelevantGameNewsHandler(); }
 
     public ulong? BidAlertRoleID { get; set; } = null;
 
@@ -24,22 +24,24 @@ public class LeagueChannelEntity : IDiscordChannel, IGameNewsReceiver
     {
         GuildID = record.GuildID;
         ChannelID = record.ChannelID;
+        LeagueID = record.LeagueID;
         GameNewsSettings = record.GameNewsSettings;
         CurrentYear = record.CurrentYear;
         ActiveLeagueYears = record.ActiveLeagueYears;
         LeagueGameNewsSettings = record.LeagueGameNewsSettings;
-        RelevantGameNewsHandler = new RelevantLeagueGameNewsHandler(this);
     }
 
-    public LeagueChannelEntity(MinimalLeagueChannelRecord record, IReadOnlyList<LeagueYear> activeLeagueYears,LeagueYear currentYear, GameNewsSettings gameNewsOnlySettings, LeagueGameNewsSettings leagueGameNewsSettings)
+    public LeagueChannelEntity(MinimalLeagueChannelRecord record, IReadOnlyList<LeagueYear> activeLeagueYears,LeagueYear currentYear, GameNewsSettingsRecord? gameNewsOnlySettings, LeagueGameNewsSettingsRecord? leagueGameNewsSettings)
     {
         GuildID = record.GuildID;
         ChannelID = record.ChannelID;
+        LeagueID = record.LeagueID;
         CurrentYear = currentYear;
         ActiveLeagueYears = activeLeagueYears;
         GameNewsSettings = gameNewsOnlySettings;
         LeagueGameNewsSettings = leagueGameNewsSettings;
-        RelevantGameNewsHandler = new RelevantLeagueGameNewsHandler(this);
+
+        
     }
 
     public LeagueChannelRecord ToDomain(LeagueYear leagueYear)
@@ -51,4 +53,19 @@ public class LeagueChannelEntity : IDiscordChannel, IGameNewsReceiver
     {
         return new MinimalLeagueChannelRecord(GuildID, ChannelID, LeagueID, BidAlertRoleID);
     }
+
+    private IRelevantGameNewsHandler? GetRelevantGameNewsHandler()
+    {
+        if (LeagueGameNewsSettings != null && GameNewsSettings != null)
+        {
+            return new RelevantLeagueGameNewsHandler(this);
+        }
+        else if (GameNewsSettings != null)
+        {
+            return new RelevantGameNewsOnlyHandler(GameNewsSettings, ChannelKey);
+        }
+
+        return null;
+    }
+
 }

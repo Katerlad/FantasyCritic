@@ -144,6 +144,14 @@ public class DiscordPushService
         var today = _clock.GetToday();
         foreach (var gameNewsReceiver in allGameNewsRecievers)
         {
+            if (gameNewsReceiver.RelevantGameNewsHandler == null)
+            {
+                //Null RelevantGameNewsHandlers means there is no GameNewsSettings for the channel
+                //which means game news has not been enabled for the channel
+                //so continue to the next channel
+                continue;
+            }
+
             var guild = _client.GetGuild(gameNewsReceiver.GuildID);
             var channel = guild?.GetChannel(gameNewsReceiver.ChannelID);
             if (channel is not SocketTextChannel textChannel)
@@ -330,6 +338,14 @@ public class DiscordPushService
         var preparedMessages = new List<PreparedDiscordMessage>();
         foreach (var receiver in allGameNewsReceivers)
         {
+            if(receiver.RelevantGameNewsHandler == null)
+            {
+                //Null RelevantGameNewsHandlers means there is no GameNewsSettings for the channel
+                //which means game news has not been enabled for the channel
+                //so continue to the next channel
+                continue;
+            }
+
             var guild = _client.GetGuild(receiver.GuildID);
             var channel = guild?.GetChannel(receiver.ChannelID);
             if (channel is not SocketTextChannel textChannel)

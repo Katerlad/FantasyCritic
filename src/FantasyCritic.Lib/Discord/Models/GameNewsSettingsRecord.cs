@@ -1,6 +1,6 @@
 
 
-public class GameNewsSettings
+public record GameNewsSettingsRecord
 {
     public bool EnableGameNews { get; set; }
     public bool ShowMightReleaseInYearNews { get; set; }
