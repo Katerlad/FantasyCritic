@@ -60,14 +60,12 @@ ALTER TABLE `tbl_discord_gamenewschannel`
 ALTER TABLE `tbl_discord_leaguechannel`
 	ADD COLUMN `ShowPickedGameNews` BIT NULL DEFAULT NULL AFTER `BidAlertRoleID`,
 	ADD COLUMN `ShowEligibleGameNews` BIT NULL DEFAULT NULL AFTER `ShowPickedGameNews`,
-	ADD COLUMN `ShowCurrentYearGameNewsOnly` BIT NULL DEFAULT NULL AFTER `ShowEligibleGameNews`,
-	ADD COLUMN `NotableMissSetting` VARCHAR(50) NULL DEFAULT NULL AFTER `ShowCurrentYearGameNewsOnly`,
+	ADD COLUMN `NotableMissSetting` VARCHAR(50) NULL DEFAULT NULL AFTER `ShowEligibleGameNews`,
 	ADD CONSTRAINT `FK_tbl_discord_leaguechannel_tbl_discord_notablemissoptions` FOREIGN KEY (`NotableMissSetting`) REFERENCES `tbl_discord_notablemissoptions` (`Name`) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 UPDATE tbl_discord_leaguechannel SET
 ShowPickedGameNews = false,
 ShowEligibleGameNews = false,
-ShowCurrentYearGameNewsOnly = false,
 NotableMissSetting = 'None'
 WHERE 
 SendLeagueMasterGameUpdates = 0 AND SendNotableMisses = 0;
@@ -75,7 +73,6 @@ SendLeagueMasterGameUpdates = 0 AND SendNotableMisses = 0;
 UPDATE tbl_discord_leaguechannel SET
 ShowPickedGameNews = false,
 ShowEligibleGameNews = false,
-ShowCurrentYearGameNewsOnly = false,
 NotableMissSetting = 'ScoreUpdates'
 WHERE 
 SendLeagueMasterGameUpdates = 0 AND SendNotableMisses = 1;
@@ -83,7 +80,6 @@ SendLeagueMasterGameUpdates = 0 AND SendNotableMisses = 1;
 UPDATE tbl_discord_leaguechannel SET
 ShowPickedGameNews = true,
 ShowEligibleGameNews = true,
-ShowCurrentYearGameNewsOnly = false,
 NotableMissSetting = 'None'
 WHERE 
 SendLeagueMasterGameUpdates = 1 AND SendNotableMisses = 0;
@@ -91,7 +87,6 @@ SendLeagueMasterGameUpdates = 1 AND SendNotableMisses = 0;
 UPDATE tbl_discord_leaguechannel SET
 ShowPickedGameNews = true,
 ShowEligibleGameNews = true,
-ShowCurrentYearGameNewsOnly = false,
 NotableMissSetting = 'ScoreUpdates'
 WHERE 
 SendLeagueMasterGameUpdates = 1 AND SendNotableMisses = 1;
@@ -99,7 +94,6 @@ SendLeagueMasterGameUpdates = 1 AND SendNotableMisses = 1;
 ALTER TABLE `tbl_discord_leaguechannel`
 	CHANGE COLUMN `ShowPickedGameNews` `ShowPickedGameNews` BIT(1) NOT NULL AFTER `BidAlertRoleID`,
 	CHANGE COLUMN `ShowEligibleGameNews` `ShowEligibleGameNews` BIT(1) NOT NULL AFTER `ShowPickedGameNews`,
-	CHANGE COLUMN `ShowCurrentYearGameNewsOnly` `ShowCurrentYearGameNewsOnly` BIT(1) NOT NULL AFTER `ShowEligibleGameNews`,
 	CHANGE COLUMN `NotableMissSetting` `NotableMissSetting` VARCHAR(50) NOT NULL AFTER `ShowCurrentYearGameNewsOnly`,
 	DROP COLUMN `SendLeagueMasterGameUpdates`,
 	DROP COLUMN `SendNotableMisses`;
