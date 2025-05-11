@@ -3,8 +3,9 @@
 public record GameNewsSettingsRecord
 {
     public bool EnableGameNews { get; set; }
+    public bool ShowWillReleaseInYearNews { get; set; }
     public bool ShowMightReleaseInYearNews { get; set; }
-    public  bool ShowWillReleaseInYearNews { get; set; }
+    public bool ShowWillNotReleaseInYearNews { get; set; }
     public bool ShowScoreGameNews { get; set; }
     public bool ShowReleasedGameNews { get; set; }
     public bool ShowNewGameNews { get; set; }
