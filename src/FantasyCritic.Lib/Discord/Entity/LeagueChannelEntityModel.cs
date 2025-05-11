@@ -25,28 +25,24 @@ public class LeagueChannelEntityModel : IDiscordChannel, IGameNewsReceiver
         GuildID = record.GuildID;
         ChannelID = record.ChannelID;
         LeagueID = record.LeagueID;
-        GameNewsSettings = record.GameNewsSettings;
         CurrentYear = record.CurrentYear;
         ActiveLeagueYears = record.ActiveLeagueYears;
         LeagueGameNewsSettings = record.LeagueGameNewsSettings;
     }
 
-    public LeagueChannelEntityModel(MinimalLeagueChannelRecord record, IReadOnlyList<LeagueYear> activeLeagueYears,LeagueYear currentYear, GameNewsSettingsRecord? gameNewsOnlySettings, LeagueGameNewsSettingsRecord? leagueGameNewsSettings)
+    public LeagueChannelEntityModel(MinimalLeagueChannelRecord record, IReadOnlyList<LeagueYear> activeLeagueYears,LeagueYear currentYear, LeagueGameNewsSettingsRecord? leagueGameNewsSettings)
     {
         GuildID = record.GuildID;
         ChannelID = record.ChannelID;
         LeagueID = record.LeagueID;
         CurrentYear = currentYear;
         ActiveLeagueYears = activeLeagueYears;
-        GameNewsSettings = gameNewsOnlySettings;
         LeagueGameNewsSettings = leagueGameNewsSettings;
-
-        
     }
 
     public LeagueChannelRecord ToDomain(LeagueYear leagueYear)
     {
-        return new LeagueChannelRecord(GuildID, ChannelID, LeagueID, CurrentYear, ActiveLeagueYears, LeagueGameNewsSettings, GameNewsSettings, BidAlertRoleID);
+        return new LeagueChannelRecord(GuildID, ChannelID, LeagueID, CurrentYear, ActiveLeagueYears, LeagueGameNewsSettings, BidAlertRoleID);
     }
 
     public MinimalLeagueChannelRecord ToMinimalDomain()

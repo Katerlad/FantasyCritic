@@ -514,7 +514,6 @@ namespace FantasyCritic.Lib.Discord.Commands
                     new LeagueGameNewsSettingsRecord(
                         settings.ShowPickedGameNews ?? false,
                         settings.ShowEligibleGameNews ?? false,
-                        settings.ShowCurrentYearGameNewsOnly ?? false,
                         settings.NotableMissSetting ?? NotableMissSetting.None
                     ));
 
@@ -545,7 +544,6 @@ namespace FantasyCritic.Lib.Discord.Commands
                     new LeagueGameNewsSettingsRecord(
                         settings.ShowPickedGameNews ?? false,
                         settings.ShowEligibleGameNews ?? false,
-                        settings.ShowCurrentYearGameNewsOnly ?? false,
                         settings.NotableMissSetting ?? NotableMissSetting.None
                         )
                     );
