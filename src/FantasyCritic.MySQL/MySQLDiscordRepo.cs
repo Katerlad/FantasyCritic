@@ -42,7 +42,13 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task SetConferenceChannel(Guid conferenceID, ulong guildID, ulong channelID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var conferenceChannelEntity = new ConferenceChannelEntity(guildID, channelID, conferenceID);
+        var existingChannel = await GetConferenceChannelEntity(guildID, channelID);
+        var sql = existingChannel == null
+            ? "INSERT INTO tbl_discord_conferencechannel (GuildID,ChannelID,ConferenceID) VALUES (@GuildID, @ChannelID, @ConferenceID)"
+            : "UPDATE tbl_discord_conferencechannel SET ConferenceID=@ConferenceID WHERE ChannelID=@ChannelID AND GuildID=@GuildID";
+        await connection.ExecuteAsync(sql, conferenceChannelEntity);
     }
 
     public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, LeagueGameNewsSettingsRecord leagueGameNewsSettings)
@@ -57,7 +63,21 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task SetSkippedGameNewsTags(ulong guildID, ulong channelID, IEnumerable<MasterGameTag> skippedTags)
     {
-        throw new NotImplementedException();
+        var param = new
+        {
+            guildID,
+            channelID
+        };
+        const string deleteTagsSQL = "delete from tbl_discord_gamenewschannelskiptag where GuildID=@guildID AND ChannelID=@channelID;";
+
+        var tagEntities = skippedTags.Select(x => new GameNewsChannelSkippedTagEntity(guildID, channelID, x));
+
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+        await connection.ExecuteAsync(deleteTagsSQL, param, transaction);
+        await connection.BulkInsertAsync<GameNewsChannelSkippedTagEntity>(tagEntities, "tbl_discord_gamenewschannelskiptag", 500, transaction);
+        await transaction.CommitAsync();
     }
 
     public async Task SetBidAlertRoleId(Guid leagueID, ulong guildID, ulong channelID, ulong? bidAlertRoleID)
@@ -67,17 +87,41 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task<bool> DeleteLeagueChannel(ulong guildID, ulong channelID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var queryObject = new
+        {
+            guildID,
+            channelID
+        };
+        var sql = "DELETE FROM tbl_discord_leaguechannel WHERE GuildID=@guildID AND ChannelID=@channelID";
+        var rowsDeleted = await connection.ExecuteAsync(sql, queryObject);
+        return rowsDeleted >= 1;
     }
 
     public async Task<bool> DeleteConferenceChannel(ulong guildID, ulong channelID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var queryObject = new
+        {
+            guildID,
+            channelID
+        };
+        var sql = "DELETE FROM tbl_discord_conferencechannel WHERE GuildID=@guildID AND ChannelID=@channelID";
+        var rowsDeleted = await connection.ExecuteAsync(sql, queryObject);
+        return rowsDeleted >= 1;
     }
 
     public async Task<bool> DeleteGameNewsChannel(ulong guildID, ulong channelID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var queryObject = new
+        {
+            guildID,
+            channelID
+        };
+        var sql = "DELETE FROM tbl_discord_gamenewschannel WHERE GuildID=@guildID AND ChannelID=@channelID";
+        var rowsDeleted = await connection.ExecuteAsync(sql, queryObject);
+        return rowsDeleted >= 1;
     }
 
     public async Task<IReadOnlyList<LeagueChannelRecord>> GetAllLeagueChannels()
@@ -102,7 +146,16 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task<IReadOnlyList<MinimalConferenceChannel>> GetConferenceChannels(Guid conferenceID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var queryObject = new
+        {
+            conferenceID
+        };
+
+        const string conferenceChannelSQL = "select * from tbl_discord_conferencechannel WHERE ConferenceID = @conferenceID";
+
+        var conferenceChannels = await connection.QueryAsync<ConferenceChannelEntity>(conferenceChannelSQL, queryObject);
+        return conferenceChannels.Select(l => l.ToMinimalDomain()).ToList();
     }
 
     public async Task<MinimalLeagueChannelRecord?> GetMinimalLeagueChannel(ulong guildID, ulong channelID)
