@@ -999,7 +999,7 @@ public class AdminService
             }
             var newLeagueYear = oldLeagueYear.GetUpdatedLeagueYearWithNewScores(calculatedStats);
             var scoreChanges = new LeagueYearScoreChanges(oldLeagueYear, newLeagueYear);
-            var channelEnitites = channels.Select(x => new LeagueChannelEntity(x)).ToList();
+            var channelEnitites = channels.Select(x => new LeagueChannelEntityModel(x)).ToList();
             await _discordPushService.SendLeagueYearScoreUpdateMessage(scoreChanges, channelEnitites);
         }
     }

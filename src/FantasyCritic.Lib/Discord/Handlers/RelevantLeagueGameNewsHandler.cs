@@ -18,7 +18,7 @@ public class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
     private NotableMissSetting _notableMissSetting;
     private GameNewsSettingsRecord _newsSettings;
     private DiscordChannelKey _channelKey;
-    public RelevantLeagueGameNewsHandler(LeagueChannelEntity leagueChannelEntity)
+    public RelevantLeagueGameNewsHandler(LeagueChannelEntityModel leagueChannelEntity)
     {
         if (leagueChannelEntity.LeagueGameNewsSettings == null || leagueChannelEntity.GameNewsSettings == null)
         {

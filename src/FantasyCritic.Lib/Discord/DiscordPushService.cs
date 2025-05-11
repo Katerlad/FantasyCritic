@@ -440,12 +440,12 @@ public class DiscordPushService
         var discordRepo = scope.ServiceProvider.GetRequiredService<IDiscordRepo>();
 
         var leagueChannels = await discordRepo.GetLeagueChannels(scoreChanges.LeagueYear.League.LeagueID);
-        var leagueChannelEntities = leagueChannels.Select(channel => new LeagueChannelEntity(channel)).ToList();
+        var leagueChannelEntities = leagueChannels.Select(channel => new LeagueChannelEntityModel(channel)).ToList();
 
         await SendLeagueYearScoreUpdateMessage(scoreChanges, leagueChannelEntities);
     }
 
-    public async Task SendLeagueYearScoreUpdateMessage(LeagueYearScoreChanges scoreChanges, IEnumerable<LeagueChannelEntity> leagueChannels)
+    public async Task SendLeagueYearScoreUpdateMessage(LeagueYearScoreChanges scoreChanges, IEnumerable<LeagueChannelEntityModel> leagueChannels)
     {
         bool shouldRun = await StartBot();
         if (!shouldRun)
@@ -1033,7 +1033,7 @@ public class DiscordPushService
     private async Task<IReadOnlyList<SocketTextChannel>> GetChannelsForLeague(Guid leagueID, IDiscordRepo discordRepo)
     {
         var leagueChannels = await discordRepo.GetLeagueChannels(leagueID);
-        var leagueChannelEntities = leagueChannels.Select(channel => new LeagueChannelEntity(channel)).ToList();
+        var leagueChannelEntities = leagueChannels.Select(channel => new LeagueChannelEntityModel(channel)).ToList();
         return GetSocketTextChannels(leagueChannelEntities);
     }
 
@@ -1230,13 +1230,13 @@ public class DiscordPushService
             // Check is league channel
             if (leagueChannelRecord is not null)
             {
-                var leagueChannelEntity = new LeagueChannelEntity(leagueChannelRecord);
+                var leagueChannelEntity = new LeagueChannelEntityModel(leagueChannelRecord);
                 gameNewsReceiverChannels.Add(leagueChannelEntity);
             }
             //Check if game news only channel
             else if (gameNewsChannelRecord is not null)
             {
-                var gameNewsOnlyChannelEntity = new GameNewsOnlyChannelEntity(gameNewsChannelRecord);
+                var gameNewsOnlyChannelEntity = new GameNewsOnlyChannelEntityModel(gameNewsChannelRecord);
                 gameNewsReceiverChannels.Add(gameNewsOnlyChannelEntity);
             }
 

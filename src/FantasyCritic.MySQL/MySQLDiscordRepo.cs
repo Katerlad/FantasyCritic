@@ -609,7 +609,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         return leagueChannelEntity?.ToMinimalDomain();
     }
 
-    private async Task<LeagueChannelEntity?> GetLeagueChannelEntity(ulong guildID, ulong channelID)
+    private async Task<LeagueChannelEntityModel?> GetLeagueChannelEntity(ulong guildID, ulong channelID)
     {
         await using var connection = new MySqlConnection(_connectionString);
         var queryObject = new
@@ -644,7 +644,7 @@ public class MySQLDiscordRepo : IDiscordRepo
         var leagueGameNewsSettings = await GetLeagueGameNewsSettings(guildID, channelID);
 
 
-        return new LeagueChannelEntity(minimalLeagueChannelRecord, activeYears.ToList(), currentYear, gameNewsSettings, leagueGameNewsSettings);
+        return new LeagueChannelEntityModel(minimalLeagueChannelRecord, activeYears.ToList(), currentYear, gameNewsSettings, leagueGameNewsSettings);
     }
 
     private async Task<ConferenceChannelEntity?> GetConferenceChannelEntity(ulong guildID, ulong channelID)

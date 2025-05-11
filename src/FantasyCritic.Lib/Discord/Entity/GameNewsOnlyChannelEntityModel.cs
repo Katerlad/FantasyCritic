@@ -3,7 +3,7 @@ using FantasyCritic.Lib.Discord.Interfaces;
 using FantasyCritic.Lib.Discord.Models;
 
 namespace FantasyCritic.Lib.Discord.Entity;
-public class GameNewsOnlyChannelEntity : IDiscordChannel, IGameNewsReceiver
+public class GameNewsOnlyChannelEntityModel : IDiscordChannel, IGameNewsReceiver
 {
     public ulong GuildID { get; }
     public ulong ChannelID { get; }
@@ -12,7 +12,7 @@ public class GameNewsOnlyChannelEntity : IDiscordChannel, IGameNewsReceiver
     public GameNewsSettingsRecord? GameNewsSettings { get; }
     public IReadOnlyList<LeagueYear> ActiveLeagueYears { get; }
 
-    public GameNewsOnlyChannelEntity(GameNewsOnlyChannelRecord record)
+    public GameNewsOnlyChannelEntityModel(GameNewsOnlyChannelRecord record)
     {
         GuildID = record.GuildID;
         ChannelID = record.ChannelID;
