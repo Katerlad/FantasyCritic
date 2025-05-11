@@ -31,7 +31,13 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task SetLeagueChannel(Guid leagueID, ulong guildID, ulong channelID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, true, true, Lib.Discord.Enums.NotableMissSetting.ScoreUpdates.Value, null);
+        var existingChannel = await GetLeagueChannelEntity(guildID, channelID);
+        var sql = existingChannel == null
+            ? "INSERT INTO tbl_discord_leaguechannel (GuildID,ChannelID,LeagueID,ShowPickedGameNews,ShowEligibleGameNews,NotableMissSetting) VALUES (@GuildID, @ChannelID, @LeagueID, @ShowPickedGameNews, @ShowEligibleGameNews, @NotableMissSetting)"
+            : "UPDATE tbl_discord_leaguechannel SET LeagueID=@LeagueID WHERE ChannelID=@ChannelID AND GuildID=@GuildID";
+        await connection.ExecuteAsync(sql, leagueChannelEntity);
     }
 
     public async Task SetConferenceChannel(Guid conferenceID, ulong guildID, ulong channelID)

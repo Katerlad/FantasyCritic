@@ -24,7 +24,6 @@ public record LeagueChannelRecord(
     LeagueYear CurrentYear,
     IReadOnlyList<LeagueYear> ActiveLeagueYears,
     LeagueGameNewsSettingsRecord? LeagueGameNewsSettings,
-    GameNewsSettingsRecord? GameNewsSettings,
     ulong? BidAlertRoleID
 )
 {

@@ -13,11 +13,11 @@ public record LeagueGameNewsSettingsRecord
     public LeagueGameNewsSettingsRecord()
     {
     }
-    public LeagueGameNewsSettingsRecord(bool showPickedGameNews,bool showEligibleGameNews, bool showCurrentYearGameNewsOnly, NotableMissSetting notableMissSetting)
+
+    public LeagueGameNewsSettingsRecord(bool showPickedGameNews,bool showEligibleGameNews, NotableMissSetting notableMissSetting)
     {
         ShowPickedGameNews = showPickedGameNews;
         ShowEligibleGameNews = showEligibleGameNews;
-        ShowCurrentYearGameNewsOnly = showCurrentYearGameNewsOnly;
         NotableMissSetting = notableMissSetting;
     }
 }
