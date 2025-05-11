@@ -67,7 +67,60 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task SetGameNewsSetting(ulong guildID, ulong channelID, GameNewsSettingsRecord gameNewsSettings)
     {
-       
+        var insertOrUpdateSQL = """
+                                INSERT INTO tbl_discord_gamenewschannel (
+                                    GuildID,
+                                    ChannelID,
+                                    ShowWillReleaseInYearNews,
+                                    ShowMightReleaseInYearNews,
+                                    ShowWillNotReleaseInYearNews,
+                                    ShowScoreGameNews,
+                                    ShowReleasedGameNews,
+                                    ShowNewGameNews,
+                                    ShowEditedGameNews
+                                )
+                                VALUES (
+                                    @GuildID,
+                                    @ChannelID,
+                                    @ShowWillReleaseInYearNews,
+                                    @ShowMightReleaseInYearNews,
+                                    @ShowWillNotReleaseInYearNews,
+                                    @ShowScoreGameNews,
+                                    @ShowReleasedGameNews,
+                                    @ShowNewGameNews,
+                                    @ShowEditedGameNews
+                                )
+                                ON DUPLICATE KEY UPDATE
+                                    ShowWillReleaseInYearNews = @ShowWillReleaseInYearNews,
+                                    ShowMightReleaseInYearNews = @ShowMightReleaseInYearNews,
+                                    ShowWillNotReleaseInYearNews = @ShowWillNotReleaseInYearNews,
+                                    ShowScoreGameNews = @ShowScoreGameNews,
+                                    ShowReleasedGameNews = @ShowReleasedGameNews,
+                                    ShowNewGameNews = @ShowNewGameNews,
+                                    ShowEditedGameNews = @ShowEditedGameNews;
+                                
+                                """;
+        var selectTagsSQL = "SELECT * from tbl_discord_gamenewschannelskiptag where GuildID=@guildID AND ChannelID=@channelID;";
+        var deleteTagsSQL = "DELETE from tbl_discord_gamenewschannelskiptag where GuildID=@guildID AND ChannelID=@channelID;";
+        var gameNewsChannelEntity = new GameNewsChannelEntity(guildID, channelID, gameNewsSettings.ShowWillReleaseInYearNews, gameNewsSettings.ShowMightReleaseInYearNews,
+            gameNewsSettings.ShowWillNotReleaseInYearNews, gameNewsSettings.ShowScoreGameNews, gameNewsSettings.ShowReleasedGameNews, gameNewsSettings.ShowNewGameNews, gameNewsSettings.ShowEditedGameNews);
+
+        var param = new
+        {
+            guildID,
+            channelID
+        };
+
+        await using var connection = new MySqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        var masterGameTagEntities = await connection.QueryAsync<GameNewsChannelSkippedTagEntity>(selectTagsSQL, param);
+
+        await using var transaction = await connection.BeginTransactionAsync();
+        await connection.ExecuteAsync(deleteTagsSQL, param, transaction);
+        await connection.ExecuteAsync(insertOrUpdateSQL, gameNewsChannelEntity, transaction);
+        await connection.BulkInsertAsync(masterGameTagEntities, "tbl_discord_gamenewschannelskiptag", 500, transaction);
+        await transaction.CommitAsync();
     }
 
     public async Task SetSkippedGameNewsTags(ulong guildID, ulong channelID, IEnumerable<MasterGameTag> skippedTags)
