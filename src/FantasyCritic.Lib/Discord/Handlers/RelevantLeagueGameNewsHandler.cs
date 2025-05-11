@@ -14,7 +14,6 @@ public class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
     private readonly IReadOnlyList<LeagueYear> _activeLeagueYears;
     private bool _showPickedGameNews;
     private bool _showEligibleGameNews;
-    private bool _showCurrentYearGameNewsOnly;
     private NotableMissSetting _notableMissSetting;
     private GameNewsSettingsRecord _newsSettings;
     private DiscordChannelKey _channelKey;
@@ -30,7 +29,6 @@ public class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         _notableMissSetting = leagueChannelEntity.LeagueGameNewsSettings.NotableMissSetting;
         _newsSettings = leagueChannelEntity.GameNewsSettings;
         _activeLeagueYears = leagueChannelEntity.ActiveLeagueYears;
-        _showCurrentYearGameNewsOnly = leagueChannelEntity.LeagueGameNewsSettings.ShowCurrentYearGameNewsOnly;
         _channelKey = leagueChannelEntity.ChannelKey;
         _showEligibleGameNews = leagueChannelEntity.LeagueGameNewsSettings.ShowEligibleGameNews;
     }
@@ -186,12 +184,6 @@ public class RelevantLeagueGameNewsHandler : IRelevantGameNewsHandler
         {
             bool inPublisherRoster = leagueYear.Publishers.Any(x => x.MyMasterGames.Contains(masterGame));
             bool eligibleInYear = leagueYear.GameIsEligibleInAnySlot(masterGame, currentDate);
-
-            //Disable any news from other years if that option is enabled by the user
-            if(leagueYear != _currentLeagueYear && _showCurrentYearGameNewsOnly)
-            {
-                return false;
-            }
 
             //This is the logic for only showing picked games in the league
             if(!_showPickedGameNews && inPublisherRoster == false)

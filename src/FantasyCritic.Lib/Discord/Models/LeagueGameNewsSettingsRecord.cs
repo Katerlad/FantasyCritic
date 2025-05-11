@@ -6,8 +6,6 @@ public record LeagueGameNewsSettingsRecord
     public bool ShowPickedGameNews { get; } = true;
     public bool ShowEligibleGameNews { get; } = true;
 
-    public bool ShowCurrentYearGameNewsOnly { get; } = false;
-
     public NotableMissSetting NotableMissSetting { get; } = NotableMissSetting.ScoreUpdates;
 
     public LeagueGameNewsSettingsRecord()

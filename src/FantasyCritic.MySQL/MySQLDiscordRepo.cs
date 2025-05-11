@@ -53,12 +53,21 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task SetLeagueGameNewsSetting(Guid leagueID, ulong guildID, ulong channelID, LeagueGameNewsSettingsRecord leagueGameNewsSettings)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, leagueGameNewsSettings.ShowPickedGameNews, leagueGameNewsSettings.ShowEligibleGameNews, leagueGameNewsSettings.NotableMissSetting.Value, null);
+        var sql = """
+                  UPDATE tbl_discord_leaguechannel SET 
+                  ShowPickedGameNews=@ShowPickedGameNews, 
+                  ShowEligibleGameNews=@ShowEligibleGameNews,
+                  SendNotableMisses=@SendNotableMisses
+                  WHERE LeagueID=@LeagueID AND GuildID=@GuildID AND ChannelID=@ChannelID";
+                  """;
+        await connection.ExecuteAsync(sql, leagueChannelEntity);
     }
 
     public async Task SetGameNewsSetting(ulong guildID, ulong channelID, GameNewsSettingsRecord gameNewsSettings)
     {
-        throw new NotImplementedException();
+       
     }
 
     public async Task SetSkippedGameNewsTags(ulong guildID, ulong channelID, IEnumerable<MasterGameTag> skippedTags)
@@ -82,7 +91,10 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task SetBidAlertRoleId(Guid leagueID, ulong guildID, ulong channelID, ulong? bidAlertRoleID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var leagueChannelEntity = new LeagueChannelEntity(guildID, channelID, leagueID, true, true, "UNUSED", bidAlertRoleID);
+        var sql = "UPDATE tbl_discord_leaguechannel SET BidAlertRoleID=@BidAlertRoleID WHERE LeagueID=@LeagueID AND GuildID=@GuildID AND ChannelID=@ChannelID";
+        await connection.ExecuteAsync(sql, leagueChannelEntity);
     }
 
     public async Task<bool> DeleteLeagueChannel(ulong guildID, ulong channelID)
