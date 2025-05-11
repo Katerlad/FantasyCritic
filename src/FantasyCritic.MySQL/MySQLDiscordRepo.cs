@@ -235,7 +235,39 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task<ConferenceChannel?> GetConferenceChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null)
     {
-        throw new NotImplementedException();
+        var conferenceChannelEntity = await GetConferenceChannelEntity(guildID, channelID);
+        if (conferenceChannelEntity is null)
+        {
+            return null;
+        }
+
+        ConferenceYear? conferenceYear = null;
+
+        if (year != null)
+        {
+            conferenceYear = await _conferenceRepo.GetConferenceYear(conferenceChannelEntity.ConferenceID, year.Value);
+        }
+        else
+        {
+            var conference = await _conferenceRepo.GetConference(conferenceChannelEntity.ConferenceID);
+            if (conference is null)
+            {
+                return null;
+            }
+            var supportedYear = supportedYears
+                .OrderBy(y => y.Year)
+                .FirstOrDefault(y => !y.Finished && conference.Years.Contains(y.Year));
+            if (supportedYear == null)
+            {
+                return null;
+            }
+
+            conferenceYear = await _conferenceRepo.GetConferenceYear(conferenceChannelEntity.ConferenceID, supportedYear.Year);
+        }
+
+        return conferenceYear is null
+            ? null
+            : conferenceChannelEntity.ToDomain(conferenceYear);
     }
 
     public async Task<GameNewsOnlyChannelRecord?> GetGameNewsChannel(ulong guildID, ulong channelID)
@@ -245,7 +277,13 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task RemoveAllLeagueChannelsForLeague(Guid leagueID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var queryObject = new
+        {
+            leagueID
+        };
+        var sql = "DELETE FROM tbl_discord_leaguechannel WHERE LeagueID=@leagueID";
+        await connection.ExecuteAsync(sql, queryObject);
     }
 
     public async Task<CompleteGameNewsSettings?> GetCompleteGameNewsSettings(ulong guildID, ulong channelID)
