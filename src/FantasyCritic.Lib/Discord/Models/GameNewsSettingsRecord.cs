@@ -19,6 +19,7 @@ public record GameNewsSettingsRecord
     {
         ShowWillReleaseInYearNews = value;
         ShowMightReleaseInYearNews = value;
+        ShowWillNotReleaseInYearNews = value;
         ShowScoreGameNews = value;
         ShowReleasedGameNews = value;
         ShowNewGameNews = value;
@@ -30,11 +31,11 @@ public record GameNewsSettingsRecord
     {
         return ShowWillReleaseInYearNews
         && ShowMightReleaseInYearNews
+        && ShowWillNotReleaseInYearNews
         && ShowScoreGameNews
         && ShowReleasedGameNews
         && ShowNewGameNews
         && ShowEditedGameNews
         && SkippedTags.Count == 0;
     }
-
 }
