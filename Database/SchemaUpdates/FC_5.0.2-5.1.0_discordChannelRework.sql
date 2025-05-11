@@ -4,6 +4,10 @@ CREATE TABLE `tbl_discord_notablemissoptions` (
 )
 ;
 
+INSERT INTO `tbl_discord_notablemissoptions` (`Name`) VALUES ('InitialScore');
+INSERT INTO `tbl_discord_notablemissoptions` (`Name`) VALUES ('ScoreUpdates');
+INSERT INTO `tbl_discord_notablemissoptions` (`Name`) VALUES ('None');
+
 ALTER TABLE `tbl_discord_leaguechannel`
 	ADD COLUMN `ShowPickedGameNews` BIT NULL DEFAULT NULL AFTER `BidAlertRoleID`,
 	ADD COLUMN `ShowEligibleGameNews` BIT NULL DEFAULT NULL AFTER `ShowPickedGameNews`,
