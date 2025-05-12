@@ -61,7 +61,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
                 Context.User));
             return;
         }
-        var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id, supportedYears, year);
+        var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id, year);
         if (leagueChannel == null)
         {
             await FollowupAsync(embed: _discordFormatter.BuildErrorEmbedWithUserFooter(
@@ -142,7 +142,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
         await DeferAsync();
 
         var supportedYears = await _interLeagueService.GetSupportedYears();
-        var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id, supportedYears);
+        var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id);
         if (leagueChannel == null)
         {
             await FollowupAsync(embed: _discordFormatter.BuildErrorEmbedWithUserFooter(
@@ -180,8 +180,7 @@ public class PublisherCommand : InteractionModuleBase<SocketInteractionContext>
     {
         await DeferAsync();
 
-        var supportedYears = await _interLeagueService.GetSupportedYears();
-        var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id, supportedYears);
+        var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id);
         if (leagueChannel == null)
         {
             await FollowupAsync(embed: _discordFormatter.BuildErrorEmbedWithUserFooter(

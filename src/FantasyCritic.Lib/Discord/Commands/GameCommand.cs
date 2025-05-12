@@ -54,7 +54,7 @@ public class GameCommand : InteractionModuleBase<SocketInteractionContext>
             return;
         }
 
-        LeagueChannelRecord? leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id, supportedYears, year);
+        LeagueChannelRecord? leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id, year);
         var termToSearch = gameName.ToLower().Trim();
 
         if (termToSearch.Length < 2)

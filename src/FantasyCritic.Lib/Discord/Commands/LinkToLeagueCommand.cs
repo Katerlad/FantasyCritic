@@ -42,7 +42,7 @@ public class LinkToLeagueCommand : InteractionModuleBase<SocketInteractionContex
                 Context.User));
             return;
         }
-        var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id, supportedYears, year);
+        var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id, year);
         if (leagueChannel == null)
         {
             await FollowupAsync(embed: _discordFormatter.BuildErrorEmbedWithUserFooter(

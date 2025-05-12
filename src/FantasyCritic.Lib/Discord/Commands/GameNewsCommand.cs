@@ -87,7 +87,7 @@ public class GameNewsCommand : InteractionModuleBase<SocketInteractionContext>
         }
         else
         {
-            var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id, supportedYears);
+            var leagueChannel = await _discordRepo.GetLeagueChannel(Context.Guild.Id, Context.Channel.Id);
             if (leagueChannel == null)
             {
                 await FollowupAsync(embed: _discordFormatter.BuildErrorEmbedWithUserFooter(

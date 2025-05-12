@@ -1,5 +1,6 @@
 using FantasyCritic.Lib.DependencyInjection;
 using FantasyCritic.Lib.Discord.Models;
+using FantasyCritic.Lib.Domain;
 using FantasyCritic.Lib.Domain.Conferences;
 using FantasyCritic.Lib.Interfaces;
 using FantasyCritic.MySQL.Entities.Discord;
@@ -256,7 +257,35 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task<IReadOnlyList<LeagueChannelRecord>> GetLeagueChannels(Guid leagueID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var queryObject = new
+        {
+            leagueID
+        };
+
+        const string leagueChannelSQL = "select * from tbl_discord_leaguechannel WHERE LeagueID = @leagueID";
+
+        var leagueChannels = (await connection.QueryAsync<LeagueChannelEntity>(leagueChannelSQL, queryObject)).ToList();
+        var leagueIDsToRetrieve = leagueChannels.Select(x => x.LeagueID).Distinct().ToList();
+        var leagueYears = await _fantasyCriticRepo.GetActiveLeagueYears(leagueIDsToRetrieve);
+        var leagueYearLookup = leagueYears.ToLookup(x => x.League.LeagueID);
+
+        var finalList = new List<LeagueChannelRecord>();
+        foreach (var leagueChannelEntity in leagueChannels)
+        {
+            var matchingLeagues = leagueYearLookup[leagueChannelEntity.LeagueID].ToList();
+
+            var currentLeagueYear = matchingLeagues.Where(x => !x.SupportedYear.Finished).MinBy(x => x.Year);
+            if (currentLeagueYear is null)
+            {
+                continue;
+            }
+
+            var domain = leagueChannelEntity.ToDomain(currentLeagueYear, matchingLeagues);
+            finalList.Add(domain);
+        }
+
+        return finalList;
     }
 
     public async Task<IReadOnlyList<MinimalConferenceChannel>> GetConferenceChannels(Guid conferenceID)
@@ -275,12 +304,47 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task<MinimalLeagueChannelRecord?> GetMinimalLeagueChannel(ulong guildID, ulong channelID)
     {
-        throw new NotImplementedException();
+        var leagueChannelEntity = await GetLeagueChannelEntity(guildID, channelID);
+        return leagueChannelEntity?.ToMinimalDomain();
     }
 
-    public async Task<LeagueChannelRecord?> GetLeagueChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null)
+    public async Task<LeagueChannelRecord?> GetLeagueChannel(ulong guildID, ulong channelID, int? year = null)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var queryObject = new
+        {
+            guildID,
+            channelID,
+        };
+
+        string leagueChannelSQL = "select * from tbl_discord_leaguechannel WHERE GuildID = @guildID AND ChannelID = @channelID";
+
+        var leagueChannelEntity = await connection.QuerySingleOrDefaultAsync<LeagueChannelEntity>(leagueChannelSQL, queryObject);
+        if (leagueChannelEntity is null)
+        {
+            return null;
+        }
+
+        var leagueYears = await _fantasyCriticRepo.GetActiveLeagueYears(new List<Guid>() { leagueChannelEntity.LeagueID});
+
+        LeagueYear? relevantLeagueYear;
+        if (year.HasValue)
+        {
+            relevantLeagueYear = leagueYears.SingleOrDefault(x => x.Year == year);
+        }
+        else
+        {
+            relevantLeagueYear = leagueYears.Where(x => !x.SupportedYear.Finished).MinBy(x => x.Year);
+        }
+
+        if (relevantLeagueYear is null)
+        {
+            throw new Exception($"Could not find league year for GuildID:{guildID}, ChannelID:{channelID} and Year:{year}");
+        }
+
+
+        var domain = leagueChannelEntity.ToDomain(relevantLeagueYear, leagueYears);
+        return domain;
     }
 
     public async Task<ConferenceChannel?> GetConferenceChannel(ulong guildID, ulong channelID, IReadOnlyList<SupportedYear> supportedYears, int? year = null)
