@@ -1,7 +1,5 @@
 using FantasyCritic.Lib.DependencyInjection;
-using FantasyCritic.Lib.Discord.Enums;
 using FantasyCritic.Lib.Discord.Models;
-using FantasyCritic.Lib.Domain;
 using FantasyCritic.Lib.Domain.Conferences;
 using FantasyCritic.Lib.Interfaces;
 using FantasyCritic.MySQL.Entities.Discord;
@@ -430,69 +428,55 @@ public class MySQLDiscordRepo : IDiscordRepo
             ChannelID = channelID
         };
 
-        //TODO this sql needs to be updated with the new table structure
-        const string sql =
+        
+        const string optionsSql =
             """
                 SELECT 
-                    gno.GuildID,
-                    gno.ChannelID,
-                    lgno.ShowPickedGameNews,
-                    lgno.ShowEligibleGameNews,
-                    lgno.ShowCurrentYearGameNewsOnly,
-                    lgno.NotableMissSetting,
-                    gno.EnableGameNews,
-                    gno.ShowMightReleaseInYearNews,
-                    gno.ShowWillReleaseInYearNews,
-                    gno.ShowScoreGameNews,
-                    gno.ShowReleasedGameNews,
-                    gno.ShowNewGameNews,
-                    gno.ShowEditedGameNews,
-                    COALESCE(GROUP_CONCAT(t.TagName), '') AS SkippedTags
-                FROM tbl_discord_gamenewsoptions gno
-                LEFT JOIN tbl_discord_league_gamenewsoptions lgno
-                    ON gno.GuildID = lgno.GuildID AND gno.ChannelID = lgno.ChannelID
-                LEFT JOIN tbl_discord_gamenewschannelskiptag t
-                    ON gno.GuildID = t.GuildID AND gno.ChannelID = t.ChannelID
-                WHERE gno.GuildID = GuildID AND gno.ChannelID = ChannelID
-                GROUP BY gno.GuildID, gno.ChannelID;
+                    gnc.GuildID,
+                    gnc.ChannelID,
+                    lc.ShowPickedGameNews,
+                    lc.ShowEligibleGameNews,
+                    lc.NotableMissSetting,
+                    gnc.EnableGameNews,
+                    gnc.ShowMightReleaseInYearNews,
+                    gnc.ShowWillReleaseInYearNews,
+                    gnc.ShowScoreGameNews,
+                    gnc.ShowReleasedGameNews,
+                    gnc.ShowNewGameNews,
+                    gnc.ShowEditedGameNews
+                FROM tbl_discord_gamenewschannel gnc
+                LEFT JOIN tbl_discord_leaguechannel lc
+                    ON gnc.GuildID = lc.GuildID AND gnc.ChannelID = lc.ChannelID
+                WHERE gnc.GuildID = GuildID AND gnc.ChannelID = ChannelID
+                GROUP BY gnc.GuildID, gnc.ChannelID;
             """;
 
-        //TODO Get the tags in a second call, don't do the string concat stuff.
+        const string skippedTagsSql =
+            """
+                SELECT 
+                    TagName
+                FROM tbl_discord_gamenewschannelskiptag
+                WHERE GuildID = @GuildID AND ChannelID = @ChannelID;
+            """;
 
-        var result = await connection.QuerySingleOrDefaultAsync<CompleteGameNewsSettingEntity>(sql, queryObject);
-        if (result == null)
+        var optionsResult = await connection.QuerySingleOrDefaultAsync<CompleteGameNewsSettingsEntity>(optionsSql, queryObject);
+        if (optionsResult == null)
         {
             return null; // No data found
         }
 
-        //This ToDomain needs to be implemented. It probably needs to take in parameters, like the master game tag dictionary, for example
-        //ToDomain function should never be async, should never retrieve more data. They should be passed everything they need.
-        return result.ToDomain();
+        
+        var skippedTagEntities = await connection.QueryAsync<GameNewsChannelSkippedTagEntity>(skippedTagsSql, queryObject);
+        
+        var skippedTagNames = skippedTagEntities.Select(x => x.TagName).ToList();
+
+        var masterTagDictionary = await _masterGameRepo.GetMasterGameTagDictionary();
+
+        var skippedTags = skippedTagNames.Select(tag => masterTagDictionary[tag]).ToList();
+
+        return optionsResult.ToDomain(skippedTags);
 
 
-        //This code below might be useful but will need to be changed.
-        //var tagsDictionary = await _masterGameRepo.GetMasterGameTagDictionary();
-
-        //// Map the result to GameNewsAdvancedSettings
-        //return new CompleteGameNewsSettings
-        //{
-        //    //League Game News Settings
-        //    ShowPickedGameNews = result.ShowPickedGameNews,
-        //    ShowEligibleGameNews = result.ShowEligibleGameNews,
-        //    ShowCurrentYearGameNewsOnly = result.ShowCurrentYearGameNewsOnly,
-        //    NotableMissSetting = NotableMissSetting.TryFromValue(result.NotableMissSetting),
-        //    //Core Game News Settings
-        //    EnableGameNews = result.EnableGameNews,
-        //    ShowMightReleaseInYearNews = result.ShowMightReleaseInYearNews,
-        //    ShowWillReleaseInYearNews = result.ShowWillReleaseInYearNews,
-        //    ShowScoreGameNews = result.ShowScoreGameNews,
-        //    ShowAlreadyReleasedGameNews = result.ShowReleasedGameNews,
-        //    ShowNewGameNews = result.ShowNewGameNews,
-        //    ShowEditedGameNews = result.ShowEditedGameNews,
-        //    SkippedTags = string.IsNullOrEmpty(result.SkippedTags)
-        //        ? new List<MasterGameTag>()
-        //        : ((string)result.SkippedTags).Split(',').Select(tag => tagsDictionary[tag]).ToList()
-        //};
     }
 
     private async Task<LeagueChannelEntity?> GetLeagueChannelEntity(ulong guildID, ulong channelID)

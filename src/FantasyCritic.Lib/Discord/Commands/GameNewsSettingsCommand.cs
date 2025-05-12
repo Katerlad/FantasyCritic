@@ -177,7 +177,7 @@ namespace FantasyCritic.Lib.Discord.Commands
                 .AddRow(new ActionRowBuilder().WithButton(GetNewGameNewsButton(settings.ShowNewGameNews)))
                 .AddRow(new ActionRowBuilder().WithButton(GetMightReleaseInYearButton(settings.ShowMightReleaseInYearNews)))
                 .AddRow(new ActionRowBuilder().WithButton(GetWillReleaseInYearButton(settings.ShowWillReleaseInYearNews)))
-                .AddRow(new ActionRowBuilder().WithButton(GetReleasedGameNewsButton(settings.ShowAlreadyReleasedGameNews)))
+                .AddRow(new ActionRowBuilder().WithButton(GetReleasedGameNewsButton(settings.ShowReleasedGameNews)))
                 .Build();
 
             await FollowupAsync("**Set Game News Release Settings** \n", components: gameReleaseSettingsMessage, ephemeral: true);
@@ -198,7 +198,6 @@ namespace FantasyCritic.Lib.Discord.Commands
             var leagueGameNewsSettingsMessage = new ComponentBuilder()
                 .AddRow(new ActionRowBuilder().WithButton(GetEnablePickedGameNewsButton(settings.ShowPickedGameNews ?? false)))
                 .AddRow(new ActionRowBuilder().WithButton(GetEnableEligibleLeagueGameNewsOnlyButton(settings.ShowEligibleGameNews ?? false)))
-                .AddRow(new ActionRowBuilder().WithButton(GetCurrentYearGameNewsOnlyButton(settings.ShowCurrentYearGameNewsOnly ?? false)))
                 .AddRow(new ActionRowBuilder().WithSelectMenu(GetNotableMissSettingSelection(settings.NotableMissSetting ?? NotableMissSetting.None)))
                 .Build();
             await FollowupAsync("**Set League Game News Settings** \n", components: leagueGameNewsSettingsMessage, ephemeral: true);
@@ -327,16 +326,6 @@ namespace FantasyCritic.Lib.Discord.Commands
                     }
                     break;
 
-                case "current_year_game_news":
-                    if (settings.ShowCurrentYearGameNewsOnly.HasValue)
-                    {
-                        settings.ShowCurrentYearGameNewsOnly = !settings.ShowCurrentYearGameNewsOnly.Value;
-                        await UpdateGameNewsSettings(settings);
-                        await UpdateButtonState("current_year_game_news", settings.ShowCurrentYearGameNewsOnly.Value);
-                        await UpdateSnapShotMessage(settings);
-                    }
-                    break;
-
                 case "might_release_in_year":
                     settings.ShowMightReleaseInYearNews = !settings.ShowMightReleaseInYearNews;
                     await UpdateGameNewsSettings(settings);
@@ -359,9 +348,9 @@ namespace FantasyCritic.Lib.Discord.Commands
                     break;
 
                 case "released_game_news":
-                    settings.ShowAlreadyReleasedGameNews = !settings.ShowAlreadyReleasedGameNews;
+                    settings.ShowReleasedGameNews = !settings.ShowReleasedGameNews;
                     await UpdateGameNewsSettings(settings);
-                    await UpdateButtonState("released_game_news", settings.ShowAlreadyReleasedGameNews);
+                    await UpdateButtonState("released_game_news", settings.ShowReleasedGameNews);
                     await UpdateSnapShotMessage(settings);
                     break;
 

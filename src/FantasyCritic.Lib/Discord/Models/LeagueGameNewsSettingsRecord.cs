@@ -10,6 +10,7 @@ public record LeagueGameNewsSettingsRecord
 
     public LeagueGameNewsSettingsRecord()
     {
+
     }
 
     public LeagueGameNewsSettingsRecord(bool showPickedGameNews,bool showEligibleGameNews, NotableMissSetting notableMissSetting)

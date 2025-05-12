@@ -8,12 +8,11 @@ public class CompleteGameNewsSettings
     public bool EnableGameNews { get; set; }
     public bool? ShowPickedGameNews { get; set; } = null;
     public bool? ShowEligibleGameNews { get; set; } = null;
-    public bool? ShowCurrentYearGameNewsOnly { get; set; } = null;
     public NotableMissSetting? NotableMissSetting { get; set; } = null;
     public bool ShowMightReleaseInYearNews { get; set; }
-    public bool ShowWillReleaseInYearNews { get; set; }
+    public  bool ShowWillReleaseInYearNews { get; set; }
     public bool ShowScoreGameNews { get; set; }
-    public bool ShowAlreadyReleasedGameNews { get; set; }
+    public bool ShowReleasedGameNews { get; set; }
     public bool ShowNewGameNews { get; set; }
     public bool ShowEditedGameNews { get; set; }
     public List<MasterGameTag> SkippedTags { get; set; } = new List<MasterGameTag>();
@@ -24,12 +23,11 @@ public class CompleteGameNewsSettings
         {
             return (ShowPickedGameNews == true || ShowPickedGameNews == null) &&
                    (ShowEligibleGameNews == true || ShowEligibleGameNews == null) &&
-                   (ShowCurrentYearGameNewsOnly == false || ShowCurrentYearGameNewsOnly == null) &&
                    (NotableMissSetting == NotableMissSetting.ScoreUpdates || NotableMissSetting == null) &&
                    ShowMightReleaseInYearNews &&
                    ShowWillReleaseInYearNews &&
                    ShowScoreGameNews &&
-                   ShowAlreadyReleasedGameNews &&
+                   ShowReleasedGameNews &&
                    ShowNewGameNews &&
                    ShowEditedGameNews &&
                    SkippedTags.Count == 0;
@@ -40,13 +38,12 @@ public class CompleteGameNewsSettings
             {
                 ShowPickedGameNews = ShowPickedGameNews == null ? null : true;
                 ShowEligibleGameNews = ShowEligibleGameNews == null ? null : true;
-                ShowCurrentYearGameNewsOnly = ShowCurrentYearGameNewsOnly == null ? null : false;
                 NotableMissSetting = NotableMissSetting == null ? null : NotableMissSetting.ScoreUpdates;
                 EnableGameNews = true;
                 ShowMightReleaseInYearNews = true;
                 ShowWillReleaseInYearNews = true;
                 ShowScoreGameNews = true;
-                ShowAlreadyReleasedGameNews = true;
+                ShowReleasedGameNews = true;
                 ShowNewGameNews = true;
                 ShowEditedGameNews = true;
                 SkippedTags = new();
@@ -59,12 +56,11 @@ public class CompleteGameNewsSettings
         EnableGameNews = true;
         ShowPickedGameNews = true;
         ShowEligibleGameNews = true;
-        ShowCurrentYearGameNewsOnly = false;
         NotableMissSetting = NotableMissSetting.ScoreUpdates;
         ShowMightReleaseInYearNews = true;
         ShowWillReleaseInYearNews = true;
         ShowScoreGameNews = true;
-        ShowAlreadyReleasedGameNews = true;
+        ShowReleasedGameNews = true;
         ShowNewGameNews = true;
         ShowEditedGameNews = true;
     }
@@ -77,7 +73,7 @@ public class CompleteGameNewsSettings
             ShowMightReleaseInYearNews = ShowMightReleaseInYearNews,
             ShowWillReleaseInYearNews = ShowWillReleaseInYearNews,
             ShowScoreGameNews = ShowScoreGameNews,
-            ShowReleasedGameNews = ShowAlreadyReleasedGameNews,
+            ShowReleasedGameNews = ShowReleasedGameNews,
             ShowEditedGameNews = ShowEditedGameNews,
             ShowNewGameNews = ShowNewGameNews,
             SkippedTags = SkippedTags
@@ -103,7 +99,6 @@ public class CompleteGameNewsSettings
             embedMessage.AppendLine("\n**LeagueChannel Settings:**");
             embedMessage.AppendLine($"  -- {GetEmoji(ShowPickedGameNews)} Show Picked Game News");
             embedMessage.AppendLine($"  -- {GetEmoji(ShowEligibleGameNews)} Show Eligible Game News");
-            embedMessage.AppendLine($"  -- {GetEmoji(ShowCurrentYearGameNewsOnly)} Show Current Year Game News Only");
         }
 
         if (NotableMissSetting != null)
@@ -115,7 +110,7 @@ public class CompleteGameNewsSettings
         embedMessage.AppendLine($"  -- {GetEmoji(ShowNewGameNews)} Show New Game News");
         embedMessage.AppendLine($"  -- {GetEmoji(ShowMightReleaseInYearNews)} Show Might Release In Year News");
         embedMessage.AppendLine($"  -- {GetEmoji(ShowWillReleaseInYearNews)} Show Will Release In Year News");
-        embedMessage.AppendLine($"  -- {GetEmoji(ShowAlreadyReleasedGameNews)} Show Released Game News");
+        embedMessage.AppendLine($"  -- {GetEmoji(ShowReleasedGameNews)} Show Released Game News");
 
         embedMessage.AppendLine("\n**Game Update Settings:**");
         embedMessage.AppendLine($"  -- {GetEmoji(ShowScoreGameNews)} Show Score Game News");
