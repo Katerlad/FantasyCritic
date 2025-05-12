@@ -1,10 +1,12 @@
 using FantasyCritic.Lib.DependencyInjection;
+using FantasyCritic.Lib.Discord.Enums;
 using FantasyCritic.Lib.Discord.Models;
 using FantasyCritic.Lib.Domain;
 using FantasyCritic.Lib.Domain.Conferences;
 using FantasyCritic.Lib.Interfaces;
 using FantasyCritic.MySQL.Entities.Discord;
 using Serilog;
+using System.Data;
 
 namespace FantasyCritic.MySQL;
 public class MySQLDiscordRepo : IDiscordRepo
@@ -386,7 +388,26 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task<GameNewsOnlyChannelRecord?> GetGameNewsChannel(ulong guildID, ulong channelID)
     {
-        throw new NotImplementedException();
+        var possibleTags = await _masterGameRepo.GetMasterGameTags();
+
+        await using var connection = new MySqlConnection(_connectionString);
+        const string channelSQL = "select * from tbl_discord_gamenewschannel WHERE GuildID = @guildID AND ChannelID = @channelID;";
+        const string tagSQL = "select * from tbl_discord_gamenewschannelskiptag WHERE GuildID = @guildID AND ChannelID = @channelID;";
+
+        var queryObject = new
+        {
+            guildID,
+            channelID
+        };
+
+        var entity = await connection.QuerySingleOrDefaultAsync<GameNewsChannelEntity>(channelSQL, queryObject);
+        var tagEntities = await connection.QueryAsync<GameNewsChannelSkippedTagEntity>(tagSQL, queryObject);
+
+        var tagAssociations = tagEntities.Select(x => x.TagName).ToHashSet();
+        IReadOnlyList<MasterGameTag> tags = possibleTags
+            .Where(x => tagAssociations.Contains(x.Name))
+            .ToList();
+        return entity?.ToDomain(tags);
     }
 
     public async Task RemoveAllLeagueChannelsForLeague(Guid leagueID)
@@ -402,7 +423,76 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task<CompleteGameNewsSettings?> GetCompleteGameNewsSettings(ulong guildID, ulong channelID)
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        var queryObject = new
+        {
+            GuildID = guildID,
+            ChannelID = channelID
+        };
+
+        //TODO this sql needs to be updated with the new table structure
+        const string sql =
+            """
+                SELECT 
+                    gno.GuildID,
+                    gno.ChannelID,
+                    lgno.ShowPickedGameNews,
+                    lgno.ShowEligibleGameNews,
+                    lgno.ShowCurrentYearGameNewsOnly,
+                    lgno.NotableMissSetting,
+                    gno.EnableGameNews,
+                    gno.ShowMightReleaseInYearNews,
+                    gno.ShowWillReleaseInYearNews,
+                    gno.ShowScoreGameNews,
+                    gno.ShowReleasedGameNews,
+                    gno.ShowNewGameNews,
+                    gno.ShowEditedGameNews,
+                    COALESCE(GROUP_CONCAT(t.TagName), '') AS SkippedTags
+                FROM tbl_discord_gamenewsoptions gno
+                LEFT JOIN tbl_discord_league_gamenewsoptions lgno
+                    ON gno.GuildID = lgno.GuildID AND gno.ChannelID = lgno.ChannelID
+                LEFT JOIN tbl_discord_gamenewschannelskiptag t
+                    ON gno.GuildID = t.GuildID AND gno.ChannelID = t.ChannelID
+                WHERE gno.GuildID = GuildID AND gno.ChannelID = ChannelID
+                GROUP BY gno.GuildID, gno.ChannelID;
+            """;
+
+        //TODO Get the tags in a second call, don't do the string concat stuff.
+
+        var result = await connection.QuerySingleOrDefaultAsync<CompleteGameNewsSettingEntity>(sql, queryObject);
+        if (result == null)
+        {
+            return null; // No data found
+        }
+
+        //This ToDomain needs to be implemented. It probably needs to take in parameters, like the master game tag dictionary, for example
+        //ToDomain function should never be async, should never retrieve more data. They should be passed everything they need.
+        return result.ToDomain();
+
+
+        //This code below might be useful but will need to be changed.
+        //var tagsDictionary = await _masterGameRepo.GetMasterGameTagDictionary();
+
+        //// Map the result to GameNewsAdvancedSettings
+        //return new CompleteGameNewsSettings
+        //{
+        //    //League Game News Settings
+        //    ShowPickedGameNews = result.ShowPickedGameNews,
+        //    ShowEligibleGameNews = result.ShowEligibleGameNews,
+        //    ShowCurrentYearGameNewsOnly = result.ShowCurrentYearGameNewsOnly,
+        //    NotableMissSetting = NotableMissSetting.TryFromValue(result.NotableMissSetting),
+        //    //Core Game News Settings
+        //    EnableGameNews = result.EnableGameNews,
+        //    ShowMightReleaseInYearNews = result.ShowMightReleaseInYearNews,
+        //    ShowWillReleaseInYearNews = result.ShowWillReleaseInYearNews,
+        //    ShowScoreGameNews = result.ShowScoreGameNews,
+        //    ShowAlreadyReleasedGameNews = result.ShowReleasedGameNews,
+        //    ShowNewGameNews = result.ShowNewGameNews,
+        //    ShowEditedGameNews = result.ShowEditedGameNews,
+        //    SkippedTags = string.IsNullOrEmpty(result.SkippedTags)
+        //        ? new List<MasterGameTag>()
+        //        : ((string)result.SkippedTags).Split(',').Select(tag => tagsDictionary[tag]).ToList()
+        //};
     }
 
     private async Task<LeagueChannelEntity?> GetLeagueChannelEntity(ulong guildID, ulong channelID)
