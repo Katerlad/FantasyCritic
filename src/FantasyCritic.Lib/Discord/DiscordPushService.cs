@@ -1226,7 +1226,6 @@ public class DiscordPushService
             var leagueChannelRecord = leagueChannelDictionary.GetValueOrDefault(channelKey);
             var gameNewsChannelRecord = gameNewsChannelDictionary.GetValueOrDefault(channelKey);
 
-
             // Check is league channel
             if (leagueChannelRecord is not null)
             {
@@ -1239,7 +1238,6 @@ public class DiscordPushService
                 var gameNewsOnlyChannelEntity = new GameNewsOnlyChannelEntityModel(gameNewsChannelRecord);
                 gameNewsReceiverChannels.Add(gameNewsOnlyChannelEntity);
             }
-
         }
 
         return gameNewsReceiverChannels;

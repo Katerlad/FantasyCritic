@@ -191,17 +191,67 @@ public class MySQLDiscordRepo : IDiscordRepo
 
     public async Task<IReadOnlyList<LeagueChannelRecord>> GetAllLeagueChannels()
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        const string sql = "select * from tbl_discord_leaguechannel";
+
+        var leagueChannels = (await connection.QueryAsync<LeagueChannelEntity>(sql)).ToList();
+        var leagueIDsToRetrieve = leagueChannels.Select(x => x.LeagueID).Distinct().ToList();
+        var leagueYears = await _fantasyCriticRepo.GetActiveLeagueYears(leagueIDsToRetrieve);
+        var leagueYearLookup = leagueYears.ToLookup(x => x.League.LeagueID);
+
+        var finalList = new List<LeagueChannelRecord>();
+        foreach (var leagueChannelEntity in leagueChannels)
+        {
+            var matchingLeagues = leagueYearLookup[leagueChannelEntity.LeagueID].ToList();
+
+            var currentLeagueYear = matchingLeagues.Where(x => !x.SupportedYear.Finished).MinBy(x => x.Year);
+            if (currentLeagueYear is null)
+            {
+                continue;
+            }
+
+            var domain = leagueChannelEntity.ToDomain(currentLeagueYear, matchingLeagues);
+            finalList.Add(domain);
+        }
+            
+        return finalList;
     }
 
     public async Task<IReadOnlyList<MinimalLeagueChannelRecord>> GetAllMinimalLeagueChannels()
     {
-        throw new NotImplementedException();
+        await using var connection = new MySqlConnection(_connectionString);
+        const string sql = "select * from tbl_discord_leaguechannel";
+
+        var leagueChannels = await connection.QueryAsync<MinimalLeagueChannelRecord>(sql);
+        return leagueChannels.ToList();
     }
 
     public async Task<IReadOnlyList<GameNewsOnlyChannelRecord>> GetAllGameNewsChannels()
     {
-        throw new NotImplementedException();
+        var possibleTags = await _masterGameRepo.GetMasterGameTags();
+
+        await using var connection = new MySqlConnection(_connectionString);
+        const string channelSQL = "select * from tbl_discord_gamenewschannel";
+        const string tagSQL = "select * from tbl_discord_gamenewschannelskiptag";
+
+        var channelEntities = await connection.QueryAsync<GameNewsChannelEntity>(channelSQL);
+        var tagEntities = await connection.QueryAsync<GameNewsChannelSkippedTagEntity>(tagSQL);
+
+        var tagLookup = tagEntities.ToLookup(x => new DiscordChannelKey(x.GuildID, x.ChannelID));
+
+        List<GameNewsOnlyChannelRecord> gameNewsChannels = new List<GameNewsOnlyChannelRecord>();
+        foreach (var channelEntity in channelEntities)
+        {
+            var channelKey = new DiscordChannelKey(channelEntity.GuildID, channelEntity.ChannelID);
+            var tagsToSkipForChannel = tagLookup[channelKey].Select(x => x.TagName).ToHashSet();
+            IReadOnlyList<MasterGameTag> tags = possibleTags
+                .Where(x => tagsToSkipForChannel.Contains(x.Name))
+                .ToList();
+
+            gameNewsChannels.Add(channelEntity.ToDomain(tags));
+        }
+
+        return gameNewsChannels;
     }
 
     public async Task<IReadOnlyList<LeagueChannelRecord>> GetLeagueChannels(Guid leagueID)
